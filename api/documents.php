@@ -118,9 +118,11 @@ if ($method === 'PUT') {
         if (!$isCreator && !$isAdmin) jsonResponse(['error' => 'ไม่มีสิทธิ์แก้ไขความเห็น'], 403);
         $allowed[] = 'annotation';
     }
+    $textFields = ['annotation','deputy_note','director_note','reply_text'];
     $upd = [];
     foreach ($allowed as $f) {
-        if (array_key_exists($f, $data)) $upd[$f] = $data[$f];
+        if (array_key_exists($f, $data))
+            $upd[$f] = in_array($f, $textFields) ? trim($data[$f]) : $data[$f];
     }
 
     // Auto-advance status when annotation saved: pending_annotation → pending_deputy or pending_director

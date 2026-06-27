@@ -321,7 +321,7 @@ async function openDocModal(docId) {
         document.getElementById('dm-tl-dep').className  = 'tld' + depDone;
         document.getElementById('dm-tl-dir').className  = 'tld' + dirDone;
         document.getElementById('dm-tl-rep').className  = 'tld' + repDone;
-        document.getElementById('dm-ann-txt').textContent = d.annotation || '';
+        document.getElementById('dm-ann-txt').textContent = (d.annotation || '').trim();
         // Show edit button for annotation if user is creator or admin
         const annEditBtn = document.getElementById('dm-ann-edit-btn');
         if (annEditBtn) {
@@ -329,9 +329,9 @@ async function openDocModal(docId) {
             annEditBtn.style.display = (canEdit && d.annotation) ? '' : 'none';
             annEditBtn.dataset.docId = d.id;
         }
-        document.getElementById('dm-dep-txt').textContent  = d.deputy_note || '';
-        document.getElementById('dm-dir-txt').textContent  = d.director_note || '';
-        document.getElementById('dm-rep-txt').textContent  = d.reply_text  || '';
+        document.getElementById('dm-dep-txt').textContent  = (d.deputy_note   || '').trim();
+        document.getElementById('dm-dir-txt').textContent  = (d.director_note || '').trim();
+        document.getElementById('dm-rep-txt').textContent  = (d.reply_text    || '').trim();
         document.getElementById('dm-depts').innerHTML  = depts;
         document.getElementById('dm-ann-row').style.display  = d.annotation   ? '' : 'none';
         document.getElementById('dm-dep-row').style.display  = d.deputy_note  ? '' : 'none';
