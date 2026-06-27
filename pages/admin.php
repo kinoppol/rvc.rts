@@ -15,6 +15,13 @@ $msg     = '';
 $msgType = 'ai';
 
 // ── Handle actions ─────────────────────────────────────────────────────
+if ($action === 'save_workflow') {
+    $val = $_POST['require_deputy_review'] === '1' ? '1' : '0';
+    query("INSERT INTO settings (setting_key,setting_value) VALUES ('require_deputy_review',?) ON DUPLICATE KEY UPDATE setting_value=?", [$val,$val]);
+    $msg = $val === '1' ? '✅ กำหนดให้เสนอรองผู้อำนวยการก่อน' : '✅ กำหนดให้เสนอผู้อำนวยการโดยตรง';
+    $msgType = 'ai';
+}
+
 if ($action === 'reset_doc_number') {
     $prefix = trim($_POST['prefix'] ?? 'รบ');
     $start  = max(1, (int)($_POST['start'] ?? 1));
@@ -96,6 +103,10 @@ foreach ($roleStats as $r) $roleStatsMap[$r['role']] = (int)$r['cnt'];
 $inactiveCount = (int)fetchValue("SELECT COUNT(*) FROM users WHERE active=0");
 
 $lastDoc = fetchValue("SELECT doc_number FROM documents_in ORDER BY id DESC LIMIT 1") ?: '-';
+
+// Load settings
+$workflowRows = fetchAll("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('require_deputy_review')");
+$workflowCfg  = array_column($workflowRows, 'setting_value', 'setting_key');
 
 // Load doc sequence settings
 $docSettings = fetchAll("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('doc_prefix','doc_year','doc_seq')");
@@ -217,6 +228,37 @@ $uploadSize = array_sum(array_map('filesize', glob(__DIR__ . '/../uploads/docume
 </div>
 
 <div class="g2 mb4">
+
+  <!-- ── Workflow settings ────────────────────────────── -->
+  <div class="card">
+    <div class="ch"><span class="ct">🔄 ขั้นตอนการเสนอหนังสือ</span></div>
+    <div class="cb">
+      <form method="post">
+        <input type="hidden" name="action" value="save_workflow">
+        <div class="fg">
+          <label class="fl" style="font-weight:600">ขั้นตอนเสนอหนังสือรับ</label>
+          <div style="margin-top:8px;display:flex;flex-direction:column;gap:10px">
+            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+              <input type="radio" name="require_deputy_review" value="0" <?= ($workflowCfg['require_deputy_review'] ?? '0') === '0' ? 'checked' : '' ?> style="margin-top:3px">
+              <div>
+                <div style="font-weight:500">เสนอผู้อำนวยการโดยตรง</div>
+                <div style="font-size:12px;color:var(--tx2)">เจ้าหน้าที่ → (เกษียน) → ผู้อำนวยการ → มอบหมาย</div>
+              </div>
+            </label>
+            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+              <input type="radio" name="require_deputy_review" value="1" <?= ($workflowCfg['require_deputy_review'] ?? '0') === '1' ? 'checked' : '' ?> style="margin-top:3px">
+              <div>
+                <div style="font-weight:500">เสนอรองผู้อำนวยการก่อน</div>
+                <div style="font-size:12px;color:var(--tx2)">เจ้าหน้าที่ → (เกษียน) → รองผู้อำนวยการ → ผู้อำนวยการ → มอบหมาย</div>
+                <div style="font-size:12px;color:var(--wn);margin-top:2px">⚠️ เจ้าหน้าที่ต้องระบุรองฯ ที่รับผิดชอบทุกครั้ง</div>
+              </div>
+            </label>
+          </div>
+        </div>
+        <button class="btn bp bsm mt3" type="submit">💾 บันทึก</button>
+      </form>
+    </div>
+  </div>
 
   <!-- ── Doc number sequence ──────────────────────────── -->
   <div class="card">
@@ -460,7 +502,7 @@ async function rmsImport() {
               <button class="btn bo bsm" onclick='admEditUser(<?= json_encode(['id'=>(int)$u['id'],'username'=>$u['username'],'name'=>$u['name'],'title'=>$u['title'],'role'=>$u['role'],'dept'=>$u['dept'],'email'=>$u['email'],'active'=>(int)$u['active']], JSON_UNESCAPED_UNICODE) ?>)' title="แก้ไข">✏️</button>
               <button class="btn bg bsm" onclick="admResetPwd(<?= (int)$u['id'] ?>, <?= json_encode($u['name'], JSON_UNESCAPED_UNICODE) ?>)" title="รีเซ็ตรหัสผ่าน">🔑</button>
               <?php if ($u['role'] !== 'admin'): ?>
-                <button class="btn bg bsm" onclick="impersonate(<?= (int)$u['id'] ?>, <?= json_encode($u['name'], JSON_UNESCAPED_UNICODE) ?>)" title="สวมสิทธิ์">👁️</button>
+                <button class="btn bg bsm" data-imp-id="<?= (int)$u['id'] ?>" data-imp-name="<?= e($u['name']) ?>" onclick="impersonate(+this.dataset.impId, this.dataset.impName)" title="สวมสิทธิ์">👁️</button>
                 <?php if ($u['active']): ?>
                   <button class="btn bwn bsm" onclick="admToggle(<?= (int)$u['id'] ?>,0,this)" title="ระงับการใช้งาน">🚫 ระงับ</button>
                 <?php else: ?>

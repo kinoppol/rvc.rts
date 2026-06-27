@@ -86,7 +86,7 @@ $total = (int)fetchValue('SELECT COUNT(*) FROM users');
               <button class="btn bg bsm" onclick='openEditModal(<?= json_encode($u, JSON_UNESCAPED_UNICODE) ?>)'>✏️</button>
               <button class="btn bg bsm" onclick="resetPwd(<?= (int)$u['id'] ?>)">🔑</button>
               <?php if ($u['role'] !== 'admin'): ?>
-              <button class="btn bwn bsm" onclick="impersonate(<?= (int)$u['id'] ?>, <?= json_encode($u['name'], JSON_UNESCAPED_UNICODE) ?>)" title="สวมสิทธิ์">👁️</button>
+              <button class="btn bwn bsm" data-imp-id="<?= (int)$u['id'] ?>" data-imp-name="<?= e($u['name']) ?>" onclick="impersonate(+this.dataset.impId, this.dataset.impName)" title="สวมสิทธิ์">👁️</button>
               <?php endif ?>
             </div>
           </td>

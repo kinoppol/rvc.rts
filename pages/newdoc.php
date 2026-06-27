@@ -2,6 +2,10 @@
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/functions.php';
 
+// Load workflow config
+$requireDeputy = fetchValue("SELECT setting_value FROM settings WHERE setting_key='require_deputy_review'") === '1';
+$deputies = $requireDeputy ? fetchAll("SELECT id, name, dept FROM users WHERE role='deputy' AND active=1 ORDER BY dept, name") : [];
+
 // Generate next doc number from settings
 $docCfgRows = fetchAll("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('doc_prefix','doc_year','doc_seq')");
 $docCfg     = array_column($docCfgRows, 'setting_value', 'setting_key');
@@ -132,6 +136,24 @@ $DEPTS = $DEPTS_DB ? array_column($DEPTS_DB, 'name')
 
     <!-- Step 2: Departments + Personnel -->
     <div id="step-2" style="display:none">
+      <?php if ($requireDeputy): ?>
+      <div class="fg" id="deputy-field">
+        <label class="fl">รองผู้อำนวยการที่รับผิดชอบ <span class="req">*</span></label>
+        <div class="alrt aw mb2" style="padding:8px 12px;font-size:12.5px"><span>⚠️</span><span>ระบบกำหนดให้เสนอรองผู้อำนวยการก่อนเสนอผู้อำนวยการ — กรุณาเลือกรองฯ ที่รับผิดชอบ</span></div>
+        <select class="fc" id="f-deputy">
+          <option value="">-- เลือกรองผู้อำนวยการ --</option>
+          <?php foreach ($deputies as $dep): ?>
+            <option value="<?= (int)$dep['id'] ?>">
+              <?= e($dep['name']) ?><?= $dep['dept'] ? ' — ' . e($dep['dept']) : '' ?>
+            </option>
+          <?php endforeach ?>
+        </select>
+        <input type="hidden" id="f-deputy-hidden">
+      </div>
+      <?php else: ?>
+      <input type="hidden" id="f-deputy" value="">
+      <?php endif ?>
+
       <div class="fg">
         <label class="fl">ฝ่าย/งาน/แผนกที่เกี่ยวข้อง</label>
         <select class="fc" id="dept-select">
@@ -174,6 +196,12 @@ $DEPTS = $DEPTS_DB ? array_column($DEPTS_DB, 'name')
             <div class="an-lbl">เกษียนหนังสือ</div>
             <div id="sum-annot"></div>
           </div>
+          <?php if ($requireDeputy): ?>
+          <div id="sum-deputy-row" style="display:none;margin-bottom:8px">
+            <div style="font-size:11.5px;color:var(--tx2);margin-bottom:3px">รองผู้อำนวยการที่รับผิดชอบ</div>
+            <div style="font-weight:500;color:var(--p)" id="sum-deputy"></div>
+          </div>
+          <?php endif ?>
           <div class="chips mt3" id="sum-depts"></div>
           <div id="sum-personnel-wrap" style="display:none;margin-top:8px">
             <div style="font-size:11.5px;color:var(--tx2);margin-bottom:4px">บุคลากรที่เกี่ยวข้อง</div>
@@ -206,10 +234,16 @@ function wizardStep(dir) {
     renderWizard();
 }
 
+const REQUIRE_DEPUTY = <?= $requireDeputy ? 'true' : 'false' ?>;
+
 function validateStep(s) {
     if (s === 0) {
         if (!document.getElementById('f-from').value.trim()) { toast('กรุณาระบุหน่วยงาน/บุคคลที่ส่ง','er'); return false; }
         if (!document.getElementById('f-subject').value.trim()) { toast('กรุณาระบุเรื่องของหนังสือ','er'); return false; }
+    }
+    if (s === 2 && REQUIRE_DEPUTY) {
+        const dep = document.getElementById('f-deputy');
+        if (dep && !dep.value) { toast('กรุณาเลือกรองผู้อำนวยการที่รับผิดชอบ','er'); return false; }
     }
     return true;
 }
@@ -259,6 +293,14 @@ function fillSummary() {
     if (annot) { annotWrap.style.display = ''; document.getElementById('sum-annot').textContent = annot; }
     else annotWrap.style.display = 'none';
 
+    // Deputy
+    if (REQUIRE_DEPUTY) {
+        const depSel = document.getElementById('f-deputy');
+        const depName = depSel?.options[depSel.selectedIndex]?.text || '';
+        const depRow = document.getElementById('sum-deputy-row');
+        if (depRow) { depRow.style.display = depName ? '' : 'none'; document.getElementById('sum-deputy').textContent = depName; }
+    }
+
     const deptsEl = document.getElementById('sum-depts');
     deptsEl.innerHTML = depts ? depts.split(',').filter(Boolean).map(d => `<span class="chip">${d}</span>`).join('') : '';
 
@@ -299,6 +341,7 @@ async function wizardSave() {
             urgency:      document.getElementById('f-urgency').value,
             secrecy:      document.getElementById('f-secrecy').value,
             annotation:   document.getElementById('f-annot').value,
+            deputy_id:    document.getElementById('f-deputy')?.value || null,
             depts:        document.getElementById('f-depts').value,
             personnel:    document.getElementById('f-personnel').value,
             file_path:    filename,

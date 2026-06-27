@@ -55,6 +55,18 @@ if ($method === 'POST') {
         jsonResponse(['error' => 'เลขที่รับนี้มีในระบบแล้ว'], 422);
     }
 
+    // Determine workflow status
+    $requireDeputy = fetchValue("SELECT setting_value FROM settings WHERE setting_key='require_deputy_review'") === '1';
+    $deputyId      = ($requireDeputy && !empty($data['deputy_id'])) ? (int)$data['deputy_id'] : null;
+    $hasAnnotation = !empty($data['annotation']);
+    if (!$hasAnnotation) {
+        $initStatus = 'pending_annotation';
+    } elseif ($deputyId) {
+        $initStatus = 'pending_deputy';
+    } else {
+        $initStatus = 'pending_director';
+    }
+
     $id = insert('documents_in', [
         'doc_number'    => $data['doc_number'],
         'received_date' => $data['received_date'],
@@ -65,8 +77,9 @@ if ($method === 'POST') {
         'pages'         => (int)($data['pages'] ?? 0),
         'urgency'       => $data['urgency']    ?? 'normal',
         'secrecy'       => $data['secrecy']    ?? 'none',
+        'deputy_id'     => $deputyId,
         'annotation'    => $data['annotation'] ?? null,
-        'status'        => ($data['annotation'] ?? '') ? 'pending_director' : 'pending_annotation',
+        'status'        => $initStatus,
         'created_by'    => $user['id'],
     ]);
 
@@ -95,6 +108,16 @@ if ($method === 'PUT') {
     $upd = [];
     foreach ($allowed as $f) {
         if (array_key_exists($f, $data)) $upd[$f] = $data[$f];
+    }
+
+    // Auto-advance status when annotation saved: pending_annotation → pending_deputy or pending_director
+    if (isset($data['annotation']) && $doc['status'] === 'pending_annotation') {
+        $nextStatus = $doc['deputy_id'] ? 'pending_deputy' : 'pending_director';
+        $upd['status'] = $nextStatus;
+    }
+    // Auto-advance when deputy adds note: pending_deputy → pending_director
+    if (isset($data['deputy_note']) && $doc['status'] === 'pending_deputy') {
+        $upd['status'] = 'pending_director';
     }
 
     if ($upd) update('documents_in', $upd, 'id=?', [$id]);

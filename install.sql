@@ -32,6 +32,10 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS nickname    VARCHAR(50)  DEFAULT '' A
 ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar      VARCHAR(255) DEFAULT '' AFTER email;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS extra_roles JSON         DEFAULT NULL AFTER role;
 
+ALTER TABLE documents_in ADD COLUMN IF NOT EXISTS deputy_id INT UNSIGNED DEFAULT NULL AFTER file_path;
+
+INSERT INTO settings (setting_key, setting_value) VALUES ('require_deputy_review','0') ON DUPLICATE KEY UPDATE setting_key=setting_key;
+
 CREATE TABLE IF NOT EXISTS user_departments (
   id       INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   user_id  INT UNSIGNED NOT NULL,
@@ -57,6 +61,7 @@ CREATE TABLE IF NOT EXISTS documents_in (
   secrecy         ENUM('none','secret','top_secret') NOT NULL DEFAULT 'none',
   status          ENUM('pending_annotation','pending_deputy','pending_director','assigned','in_progress','done','blocked') NOT NULL DEFAULT 'pending_annotation',
   file_path       VARCHAR(500) DEFAULT NULL,
+  deputy_id       INT UNSIGNED DEFAULT NULL,
   annotation      TEXT         DEFAULT NULL,
   deputy_note     TEXT         DEFAULT NULL,
   director_note   TEXT         DEFAULT NULL,
