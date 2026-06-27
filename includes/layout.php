@@ -226,7 +226,9 @@ function renderDocModal(): void {
           </div>
           <div class="tln" style="margin-top:5px" id="dm-ann-row">
             <div class="an-lbl">เกษียน</div>
-            <div id="dm-ann-txt"></div>
+            <div id="dm-ann-txt" class="tln-txt"></div>
+            <div id="dm-ann-depts" style="margin-top:6px;display:none"><span style="font-size:11px;color:#a0522d">ฝ่าย/งาน: </span><span id="dm-ann-depts-txt" style="font-size:12px"></span></div>
+            <div id="dm-ann-personnel" style="margin-top:3px;display:none"><span style="font-size:11px;color:#a0522d">ผู้เกี่ยวข้อง: </span><span id="dm-ann-personnel-txt" style="font-size:12px"></span></div>
             <div id="dm-ann-edit-area" style="display:none;margin-top:8px">
               <textarea id="dm-ann-edit-txt" class="fc" style="min-height:80px;font-size:13px"></textarea>
               <div class="fx g2x" style="margin-top:6px;justify-content:flex-end">
@@ -239,17 +241,17 @@ function renderDocModal(): void {
         <div class="tli">
           <div class="tld" id="dm-tl-dep"></div>
           <div class="tlt">รองฯ ฝ่ายบริหารทรัพยากร — เพิ่มความเห็น</div>
-          <div class="tln" style="margin-top:5px" id="dm-dep-row"><div id="dm-dep-txt"></div></div>
+          <div class="tln" style="margin-top:5px" id="dm-dep-row"><div id="dm-dep-txt" class="tln-txt"></div></div>
         </div>
         <div class="tli">
           <div class="tld" id="dm-tl-dir"></div>
           <div class="tlt">ผู้อำนวยการ — พิจารณา / มอบหมาย</div>
-          <div class="tln" style="margin-top:5px" id="dm-dir-row"><div id="dm-dir-txt"></div></div>
+          <div class="tln" style="margin-top:5px" id="dm-dir-row"><div id="dm-dir-txt" class="tln-txt"></div></div>
         </div>
         <div class="tli">
           <div class="tld" id="dm-tl-rep"></div>
           <div class="tlt">ฝ่าย/งานที่รับผิดชอบ — เกษียนตอบ</div>
-          <div class="tln" style="margin-top:5px" id="dm-rep-row"><div id="dm-rep-txt"></div></div>
+          <div class="tln" style="margin-top:5px" id="dm-rep-row"><div id="dm-rep-txt" class="tln-txt"></div></div>
         </div>
       </div>
       <div id="dm-files-row" style="display:none;margin-top:14px">

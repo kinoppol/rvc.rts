@@ -14,7 +14,8 @@ if ($method === 'GET' && isset($_GET['id'])) {
     $doc = fetchOne('SELECT * FROM documents_in WHERE id=?', [$id]);
     if (!$doc) jsonResponse(['error' => 'Not found'], 404);
     $depts = fetchAll('SELECT dept_name FROM document_departments WHERE doc_id=?', [$id]);
-    jsonResponse(['doc' => $doc, 'depts' => array_column($depts, 'dept_name')]);
+    $personnel = $doc['personnel'] ? array_filter(array_map('trim', explode(',', $doc['personnel']))) : [];
+    jsonResponse(['doc' => $doc, 'depts' => array_column($depts, 'dept_name'), 'personnel' => array_values($personnel)]);
 }
 
 // GET list
@@ -78,6 +79,7 @@ if ($method === 'POST') {
         'urgency'       => $data['urgency']    ?? 'normal',
         'secrecy'       => $data['secrecy']    ?? 'none',
         'deputy_id'     => $deputyId,
+        'personnel'     => $data['personnel']  ?? null,
         'file_path'     => $data['file_path']  ?? null,
         'annotation'    => $data['annotation'] ?? null,
         'status'        => $initStatus,

@@ -304,7 +304,9 @@ async function openDocModal(docId) {
         const data = await api(`/rvc.rts/api/documents.php?id=${docId}`);
         if (!data.doc) return;
         const d = data.doc;
-        const depts = (data.depts || []).map(x => `<span class="chip">${x}</span>`).join('');
+        const depts    = (data.depts     || []).map(x => `<span class="chip">${x}</span>`).join('');
+        const deptsArr = data.depts || [];
+        const personnel = data.personnel || [];
 
         const annDone = d.annotation ? ' dn' : ' ac';
         const depDone = d.deputy_note ? ' dn' : (d.annotation ? ' ac' : '');
@@ -322,6 +324,12 @@ async function openDocModal(docId) {
         document.getElementById('dm-tl-dir').className  = 'tld' + dirDone;
         document.getElementById('dm-tl-rep').className  = 'tld' + repDone;
         document.getElementById('dm-ann-txt').textContent = (d.annotation || '').trim();
+        // Show depts and personnel under annotation
+        const annDeptsRow = document.getElementById('dm-ann-depts');
+        const annPerRow   = document.getElementById('dm-ann-personnel');
+        if (annDeptsRow) { annDeptsRow.style.display = deptsArr.length ? '' : 'none'; document.getElementById('dm-ann-depts-txt').textContent = deptsArr.join(', '); }
+        if (annPerRow)   { annPerRow.style.display   = personnel.length ? '' : 'none'; document.getElementById('dm-ann-personnel-txt').textContent = personnel.join(', '); }
+
         // Show edit button for annotation if user is creator or admin
         const annEditBtn = document.getElementById('dm-ann-edit-btn');
         if (annEditBtn) {
