@@ -80,6 +80,14 @@ $DEPTS = $DEPTS_DB ? array_column($DEPTS_DB, 'name')
         <input class="fc" id="f-short" placeholder="เช่น สอศ." readonly style="background:var(--sur2)">
       </div>
       <div class="fg">
+        <label class="fl">ไฟล์เอกสาร PDF <span style="font-size:12px;color:var(--tx2)">(อัปโหลดได้หลายไฟล์ รวมจำนวนหน้าอัตโนมัติ)</span></label>
+        <div class="upz" id="upload-zone" style="cursor:pointer">
+          <div style="font-size:32px;margin-bottom:6px">📄</div>
+          <div style="color:var(--tx2)">คลิกหรือลากไฟล์มาวางที่นี่ <em style="color:var(--tx3);font-size:12px">(PDF, แต่ละไฟล์ไม่เกิน 20MB)</em></div>
+        </div>
+        <div id="upload-display"></div>
+      </div>
+      <div class="fg">
         <label class="fl">เรื่อง <span class="req">*</span></label>
         <input class="fc" id="f-subject" placeholder="ระบุเรื่องของหนังสือ">
       </div>
@@ -97,14 +105,6 @@ $DEPTS = $DEPTS_DB ? array_column($DEPTS_DB, 'name')
           <input class="fc" type="number" id="f-pages" placeholder="0" min="0">
         </div>
       </div>
-      <div class="fg">
-        <label class="fl">ไฟล์เอกสาร PDF <span style="font-size:12px;color:var(--tx2)">(อัปโหลดได้หลายไฟล์ รวมจำนวนหน้าอัตโนมัติ)</span></label>
-        <div class="upz" id="upload-zone" style="cursor:pointer">
-          <div style="font-size:32px;margin-bottom:6px">📄</div>
-          <div style="color:var(--tx2)">คลิกหรือลากไฟล์มาวางที่นี่ <em style="color:var(--tx3);font-size:12px">(PDF, แต่ละไฟล์ไม่เกิน 20MB)</em></div>
-        </div>
-        <div id="upload-display"></div>
-      </div>
     </div>
 
     <!-- Step 1: Annotation -->
@@ -112,7 +112,7 @@ $DEPTS = $DEPTS_DB ? array_column($DEPTS_DB, 'name')
       <div class="alrt ai mb4"><span>ℹ️</span><span>เกษียนหนังสือ คือการใส่ความเห็นสรุปเพื่อเสนอผู้บังคับบัญชา พร้อมกำหนดความเร่งด่วนและระดับความลับ</span></div>
       <div class="fg">
         <label class="fl">ความเห็น / สรุปเรื่อง (เกษียน)</label>
-        <textarea class="fc" id="f-annot" placeholder="เรียน รองฯ ฝ่ายบริหารฯ — ..." style="min-height:100px"></textarea>
+        <textarea class="fc" id="f-annot" style="min-height:100px"></textarea>
       </div>
       <div class="g2">
         <div class="fg">
@@ -268,6 +268,15 @@ function renderWizard() {
     document.getElementById('btn-prev').style.display = wStep > 0 ? '' : 'none';
     document.getElementById('btn-next').style.display = wStep < STEP_COUNT - 1 ? '' : 'none';
     document.getElementById('btn-save').style.display = wStep === STEP_COUNT - 1 ? '' : 'none';
+
+    // Pre-fill annotation textarea when entering step 1
+    if (wStep === 1) {
+        const ta = document.getElementById('f-annot');
+        if (ta && !ta.value.trim()) {
+            ta.value = 'เรียน ผู้อำนวยการ\n';
+            setTimeout(() => { ta.setSelectionRange(ta.value.length, ta.value.length); ta.focus(); }, 50);
+        }
+    }
 
     if (wStep === STEP_COUNT - 1) fillSummary();
 }
