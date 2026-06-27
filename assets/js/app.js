@@ -311,6 +311,19 @@ async function openDocModal(docId) {
         if (annotBtn) annotBtn.href = `/rvc.rts/?page=annotate&id=${d.id}`;
         annotBtn && (annotBtn.style.display = d.status === 'pending_annotation' ? '' : 'none');
 
+        // File attachments
+        const filesRow = document.getElementById('dm-files-row');
+        const filesEl  = document.getElementById('dm-files');
+        if (filesEl && d.file_path) {
+            const names = d.file_path.split(',').map(s => s.trim()).filter(Boolean);
+            filesEl.innerHTML = names.map((fn, i) =>
+                `<a class="btn bg bsm" href="/rvc.rts/uploads/documents/${encodeURIComponent(fn)}" target="_blank" rel="noopener">📄 ไฟล์ ${names.length > 1 ? i + 1 : ''}</a>`
+            ).join('');
+            filesRow.style.display = '';
+        } else if (filesRow) {
+            filesRow.style.display = 'none';
+        }
+
         const editBtn = document.getElementById('dm-edit-btn');
         if (editBtn) {
             editBtn.style.display = d.status === 'pending_annotation' ? '' : 'none';

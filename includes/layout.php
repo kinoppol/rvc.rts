@@ -223,6 +223,10 @@ function renderDocModal(): void {
           <div class="tln" style="margin-top:5px" id="dm-rep-row"><div id="dm-rep-txt"></div></div>
         </div>
       </div>
+      <div id="dm-files-row" style="display:none;margin-top:14px">
+        <div style="font-size:11px;color:var(--tx2);margin-bottom:6px">ไฟล์แนบ</div>
+        <div id="dm-files" class="fx" style="flex-wrap:wrap;gap:6px"></div>
+      </div>
       <div class="chips mt4" id="dm-depts"></div>
     </div>
     <div class="mf">
