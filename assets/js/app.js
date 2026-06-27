@@ -336,8 +336,15 @@ async function openDocModal(docId) {
 
 let _editDocData = null;
 
-function openEditDocModal() {
-    const id = document.getElementById('dm-edit-btn')?.dataset.docId;
+function openEditDocById(id) {
+    // Set the doc id on the edit button so openEditDocModal can read it
+    const btn = document.getElementById('dm-edit-btn');
+    if (btn) btn.dataset.docId = id;
+    openEditDocModal(id);
+}
+
+function openEditDocModal(forceId) {
+    const id = forceId || document.getElementById('dm-edit-btn')?.dataset.docId;
     if (!id) return;
     api(`/rvc.rts/api/documents.php?id=${id}`).then(data => {
         if (!data.doc) return;
