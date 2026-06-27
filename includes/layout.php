@@ -227,7 +227,74 @@ function renderDocModal(): void {
     </div>
     <div class="mf">
       <button class="btn bg" onclick="closeModal('doc-modal')">ปิด</button>
-      <a class="btn bp" id="dm-annot-btn" href="#">✏️ เกษียน</a>
+      <button class="btn bo" id="dm-edit-btn" onclick="openEditDocModal()" style="display:none">✏️ แก้ไขข้อมูล</button>
+      <a class="btn bp" id="dm-annot-btn" href="#">📝 เกษียน</a>
+    </div>
+  </div>
+</div>
+
+<div class="ov hidden" id="edit-doc-modal">
+  <div class="mdl">
+    <div class="mh">
+      <span class="mt">แก้ไขข้อมูลเอกสาร</span>
+      <button class="mx" onclick="closeModal('edit-doc-modal')">×</button>
+    </div>
+    <div class="mb">
+      <input type="hidden" id="edm-id">
+      <div class="fg mb3">
+        <label class="fl">วันที่รับ <span class="req">*</span></label>
+        <input class="fc" type="date" id="edm-date">
+      </div>
+      <div class="g2 mb3">
+        <div class="fg">
+          <label class="fl">จากหน่วยงาน <span class="req">*</span></label>
+          <input class="fc" id="edm-from-org" placeholder="ชื่อหน่วยงาน">
+        </div>
+        <div class="fg">
+          <label class="fl">ชื่อย่อ</label>
+          <input class="fc" id="edm-from-short" placeholder="เช่น สอศ.">
+        </div>
+      </div>
+      <div class="fg mb3">
+        <label class="fl">เรื่อง <span class="req">*</span></label>
+        <input class="fc" id="edm-subject" placeholder="ระบุเรื่อง">
+      </div>
+      <div class="g2 mb3">
+        <div class="fg">
+          <label class="fl">ประเภทหนังสือ</label>
+          <select class="fc" id="edm-doctype">
+            <option value="ราชการ">หนังสือราชการ</option>
+            <option value="เอกชน">หนังสือเอกชน</option>
+            <option value="บุคคล">จากบุคคลทั่วไป</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="fl">จำนวนหน้า</label>
+          <input class="fc" type="number" id="edm-pages" min="0">
+        </div>
+      </div>
+      <div class="g2 mb3">
+        <div class="fg">
+          <label class="fl">ความเร่งด่วน</label>
+          <select class="fc" id="edm-urgency">
+            <option value="normal">ปกติ</option>
+            <option value="urgent">เร่งด่วน</option>
+            <option value="critical">ด่วนที่สุด</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="fl">ระดับความลับ</label>
+          <select class="fc" id="edm-secrecy">
+            <option value="none">ไม่ลับ</option>
+            <option value="secret">ลับ</option>
+            <option value="top_secret">ลับที่สุด</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn bg" onclick="closeModal('edit-doc-modal')">ยกเลิก</button>
+      <button class="btn bp" onclick="saveEditDoc()">💾 บันทึก</button>
     </div>
   </div>
 </div>

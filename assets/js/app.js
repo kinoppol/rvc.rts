@@ -191,16 +191,12 @@ async function handleFile(file, displayId, zone, opts = {}) {
     // Update total pages field
     if (opts.pagesFieldId) recalcPages(opts.pagesFieldId);
 
-    // Auto-suggest subject from filename when only 1 file and field is empty
+    // Auto-suggest subject from first file only; adding more files never clears it
     if (opts.subjectFieldId) {
         const subj = document.getElementById(opts.subjectFieldId);
-        if (subj && !subj.value.trim() && window._uploadedFiles.length === 1) {
+        if (subj && !subj.value.trim()) {
             subj.value = _fileNameWithoutExt(file.name);
             subj.dataset.autoFilled = '1';
-        } else if (subj && subj.dataset.autoFilled === '1') {
-            // Multiple files now — clear the auto-suggestion to avoid confusion
-            subj.value = '';
-            delete subj.dataset.autoFilled;
         }
     }
 }
@@ -222,16 +218,12 @@ function removeUploadedFile(name, displayId, zoneId) {
     // Recalc pages
     const opts = zone?._uploadOpts || {};
     if (opts.pagesFieldId) recalcPages(opts.pagesFieldId);
-    // Reset subject if it was auto-filled and we're back to 1 or 0 files
-    if (opts.subjectFieldId) {
+    // Clear subject only when all files removed and it was auto-filled
+    if (opts.subjectFieldId && window._uploadedFiles.length === 0) {
         const subj = document.getElementById(opts.subjectFieldId);
         if (subj && subj.dataset.autoFilled === '1') {
-            if (window._uploadedFiles.length === 1) {
-                subj.value = _fileNameWithoutExt(window._uploadedFiles[0].name);
-            } else if (window._uploadedFiles.length === 0) {
-                subj.value = '';
-                delete subj.dataset.autoFilled;
-            }
+            subj.value = '';
+            delete subj.dataset.autoFilled;
         }
     }
 }
@@ -319,8 +311,61 @@ async function openDocModal(docId) {
         if (annotBtn) annotBtn.href = `/rvc.rts/?page=annotate&id=${d.id}`;
         annotBtn && (annotBtn.style.display = d.status === 'pending_annotation' ? '' : 'none');
 
+        const editBtn = document.getElementById('dm-edit-btn');
+        if (editBtn) {
+            editBtn.style.display = d.status === 'pending_annotation' ? '' : 'none';
+            editBtn.dataset.docId = d.id;
+        }
+
         openModal('doc-modal');
     } catch (err) { toast('ไม่สามารถโหลดข้อมูลได้', 'er'); }
+}
+
+let _editDocData = null;
+
+function openEditDocModal() {
+    const id = document.getElementById('dm-edit-btn')?.dataset.docId;
+    if (!id) return;
+    api(`/rvc.rts/api/documents.php?id=${id}`).then(data => {
+        if (!data.doc) return;
+        const d = data.doc;
+        _editDocData = d;
+        document.getElementById('edm-id').value          = d.id;
+        document.getElementById('edm-date').value        = d.received_date;
+        document.getElementById('edm-from-org').value    = d.from_org;
+        document.getElementById('edm-from-short').value  = d.from_short || '';
+        document.getElementById('edm-subject').value     = d.subject;
+        document.getElementById('edm-doctype').value     = d.doc_type || 'ราชการ';
+        document.getElementById('edm-pages').value       = d.pages || 0;
+        document.getElementById('edm-urgency').value     = d.urgency || 'normal';
+        document.getElementById('edm-secrecy').value     = d.secrecy || 'none';
+        closeModal('doc-modal');
+        openModal('edit-doc-modal');
+    }).catch(() => toast('ไม่สามารถโหลดข้อมูลได้', 'er'));
+}
+
+async function saveEditDoc() {
+    const id = document.getElementById('edm-id').value;
+    const payload = {
+        _edit:       true,
+        received_date: document.getElementById('edm-date').value,
+        from_org:    document.getElementById('edm-from-org').value.trim(),
+        from_short:  document.getElementById('edm-from-short').value.trim(),
+        subject:     document.getElementById('edm-subject').value.trim(),
+        doc_type:    document.getElementById('edm-doctype').value,
+        pages:       parseInt(document.getElementById('edm-pages').value) || 0,
+        urgency:     document.getElementById('edm-urgency').value,
+        secrecy:     document.getElementById('edm-secrecy').value,
+    };
+    if (!payload.received_date || !payload.from_org || !payload.subject) {
+        toast('กรุณากรอกข้อมูลให้ครบ', 'er'); return;
+    }
+    try {
+        await api(`/rvc.rts/api/documents.php?id=${id}`, { method:'PUT', body: JSON.stringify(payload) });
+        toast('บันทึกเรียบร้อย', 'ok');
+        closeModal('edit-doc-modal');
+        location.reload();
+    } catch (err) { toast('เกิดข้อผิดพลาด', 'er'); }
 }
 
 function urgBadge(k) {

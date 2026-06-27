@@ -105,6 +105,10 @@ if ($method === 'PUT') {
     if (!$doc) jsonResponse(['error' => 'Not found'], 404);
 
     $allowed = ['annotation','deputy_note','director_note','reply_text','status','urgency','secrecy'];
+    // Allow editing core fields while still pending_annotation
+    if ($doc['status'] === 'pending_annotation' && ($data['_edit'] ?? false)) {
+        $allowed = array_merge($allowed, ['received_date','from_org','from_short','subject','doc_type','pages']);
+    }
     $upd = [];
     foreach ($allowed as $f) {
         if (array_key_exists($f, $data)) $upd[$f] = $data[$f];
