@@ -60,12 +60,7 @@ function openModal(id) {
 }
 function closeModal(id) { document.getElementById(id)?.classList.add('hidden'); }
 
-// Close modal on backdrop click
-document.addEventListener('click', e => {
-    if (e.target.classList.contains('ov')) {
-        e.target.classList.add('hidden');
-    }
-});
+// Modals close via button only — clicking backdrop does nothing
 
 // ── Chips (department selector) ────────────────────────────────────────
 function initChips(selectId, chipsId, inputId) {
