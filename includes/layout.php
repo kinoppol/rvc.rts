@@ -174,6 +174,20 @@ HTML;
 
 HTML;
     renderDocModal();
+    echo <<<'HTML'
+<div class="ov ov-fs hidden" id="pdf-modal">
+  <div class="mdl-fs">
+    <div class="mdl-fs-hd">
+      <span style="font-weight:600;flex:1;font-size:14px" id="pdf-modal-title">ไฟล์แนบ</span>
+      <a id="pdf-modal-dl" href="#" download style="font-size:12px;color:var(--p);text-decoration:none;margin-right:8px">⬇️ ดาวน์โหลด</a>
+      <button class="mx" onclick="closePdfModal()" style="font-size:22px;line-height:1;background:none;border:none;cursor:pointer;color:var(--tx2)">×</button>
+    </div>
+    <div class="mdl-fs-body">
+      <iframe id="pdf-modal-frame" src="" style="width:100%;height:100%;border:none;display:block"></iframe>
+    </div>
+  </div>
+</div>
+HTML;
     $meJson = json_encode(['id' => (int)$user['id'], 'role' => $user['role']]);
     echo <<<HTML
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous"></script>

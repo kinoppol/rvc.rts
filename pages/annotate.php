@@ -42,7 +42,10 @@ $DEPTS = ['ฝ่ายบริหารทรัพยากร','ฝ่าย
         <div style="font-size:11.5px;color:var(--tx2);margin-bottom:3px">จาก</div>
         <div style="font-size:13.5px;margin-bottom:10px"><?= e($sel['from_org']) ?></div>
         <?php if ($sel['file_path']): ?>
-          <a href="/rvc.rts/uploads/documents/<?= e($sel['file_path']) ?>" target="_blank" class="btn bo bsm">📎 ดูไฟล์ PDF</a>
+          <?php foreach (array_filter(explode(',', $sel['file_path'])) as $fi => $fn): $fn = trim($fn); ?>
+            <button type="button" class="btn bo bsm" style="margin-bottom:4px"
+              onclick="openPdfModal('/rvc.rts/uploads/documents/<?= rawurlencode($fn) ?>','<?= e(addslashes($fn)) ?>')">📎 ดูไฟล์<?= count(array_filter(explode(',', $sel['file_path']))) > 1 ? ' '.($fi+1) : ' PDF' ?></button>
+          <?php endforeach ?>
         <?php else: ?>
           <div style="padding:24px;background:var(--sur2);border-radius:var(--r);text-align:center;color:var(--tx3);border:1px solid var(--bd)">
             <div style="font-size:28px;margin-bottom:6px">📄</div>

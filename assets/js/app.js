@@ -51,6 +51,25 @@ function toast(msg, type = '') {
 }
 
 // ── Modal helper ──────────────────────────────────────────────────────
+function openPdfModal(url, filename) {
+    const modal = document.getElementById('pdf-modal');
+    const frame = document.getElementById('pdf-modal-frame');
+    const title = document.getElementById('pdf-modal-title');
+    const dl    = document.getElementById('pdf-modal-dl');
+    if (!modal || !frame) return;
+    frame.src = url;
+    if (title) title.textContent = filename || 'ไฟล์แนบ';
+    if (dl) { dl.href = url; dl.download = filename || 'document.pdf'; }
+    modal.classList.remove('hidden');
+    if (modal.parentElement !== document.body) document.body.appendChild(modal);
+}
+function closePdfModal() {
+    const modal = document.getElementById('pdf-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    document.getElementById('pdf-modal-frame').src = '';
+}
+
 function quickFill(taId, text) {
     const ta = document.getElementById(taId);
     if (!ta) return;
@@ -328,9 +347,11 @@ async function openDocModal(docId) {
         const filesEl  = document.getElementById('dm-files');
         if (filesEl && d.file_path) {
             const names = d.file_path.split(',').map(s => s.trim()).filter(Boolean);
-            filesEl.innerHTML = names.map((fn, i) =>
-                `<a class="btn bg bsm" href="/rvc.rts/uploads/documents/${encodeURIComponent(fn)}" target="_blank" rel="noopener">📄 ไฟล์ ${names.length > 1 ? i + 1 : ''}</a>`
-            ).join('');
+            filesEl.innerHTML = names.map((fn, i) => {
+                const url = `/rvc.rts/uploads/documents/${encodeURIComponent(fn)}`;
+                const label = `📄 ไฟล์${names.length > 1 ? ' ' + (i + 1) : ''}`;
+                return `<button type="button" class="btn bg bsm" onclick="openPdfModal('${url.replace(/'/g,"\\'")}','${fn.replace(/'/g,"\\'")}')"> ${label}</button>`;
+            }).join('');
             filesRow.style.display = '';
         } else if (filesRow) {
             filesRow.style.display = 'none';

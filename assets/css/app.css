@@ -195,6 +195,10 @@ select.fc{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
 /* Modal */
 .ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:36px 16px;overflow-y:auto;}
 .mdl{background:var(--sur);border-radius:var(--r3);width:100%;max-width:640px;box-shadow:var(--sh2);overflow:hidden;}
+.ov.ov-fs{padding:0;align-items:stretch;}
+.ov.ov-fs .mdl-fs{background:var(--sur);width:100%;height:100%;border-radius:0;display:flex;flex-direction:column;overflow:hidden;}
+.mdl-fs-hd{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--bd);background:var(--sur);flex-shrink:0;}
+.mdl-fs-body{flex:1;overflow:hidden;}
 .mh{padding:14px 20px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;}
 .mt{font-size:15px;font-weight:700;}
 .mx{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:var(--r2);cursor:pointer;color:var(--tx3);font-size:20px;background:none;border:none;font-family:inherit;}

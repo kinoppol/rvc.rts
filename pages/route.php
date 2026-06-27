@@ -59,7 +59,7 @@ $pending = fetchAll("SELECT * FROM documents_in WHERE status='pending_director' 
             <div class="fx g2x">
               <button class="btn bg bsm" onclick="openDocModal(<?= (int)$d['id'] ?>)">👁</button>
               <?php if ($d['file_path']): foreach (array_filter(explode(',', $d['file_path'])) as $fi => $fn): ?>
-                <a class="btn bs bsm" href="/rvc.rts/uploads/documents/<?= urlencode(trim($fn)) ?>" target="_blank" title="ดูไฟล์แนบ <?= $fi+1 ?>">📄<?= count(array_filter(explode(',', $d['file_path']))) > 1 ? ' '.($fi+1) : '' ?></a>
+                <button type="button" class="btn bs bsm" onclick="openPdfModal('/rvc.rts/uploads/documents/<?= rawurlencode(trim($fn)) ?>','<?= e(addslashes(trim($fn))) ?>')" title="ดูไฟล์แนบ <?= $fi+1 ?>">📄<?= count(array_filter(explode(',', $d['file_path']))) > 1 ? ' '.($fi+1) : '' ?></button>
               <?php endforeach; endif ?>
               <button class="btn bp bsm" onclick="openDeputyModal(<?= (int)$d['id'] ?>, '<?= e(addslashes($d['doc_number'])) ?>')">✍️ ให้ความเห็น</button>
             </div>
@@ -94,7 +94,7 @@ $pending = fetchAll("SELECT * FROM documents_in WHERE status='pending_director' 
             <div class="fx g2x">
               <button class="btn bg bsm" onclick="openDocModal(<?= (int)$d['id'] ?>)">👁</button>
               <?php if ($d['file_path']): foreach (array_filter(explode(',', $d['file_path'])) as $fi => $fn): ?>
-                <a class="btn bs bsm" href="/rvc.rts/uploads/documents/<?= urlencode(trim($fn)) ?>" target="_blank" title="ดูไฟล์แนบ <?= $fi+1 ?>">📄<?= count(array_filter(explode(',', $d['file_path']))) > 1 ? ' '.($fi+1) : '' ?></a>
+                <button type="button" class="btn bs bsm" onclick="openPdfModal('/rvc.rts/uploads/documents/<?= rawurlencode(trim($fn)) ?>','<?= e(addslashes(trim($fn))) ?>')" title="ดูไฟล์แนบ <?= $fi+1 ?>">📄<?= count(array_filter(explode(',', $d['file_path']))) > 1 ? ' '.($fi+1) : '' ?></button>
               <?php endforeach; endif ?>
               <button class="btn bp bsm" onclick="openAssignModal(<?= (int)$d['id'] ?>, '<?= e(addslashes($d['doc_number'])) ?>')">✅ มอบหมาย</button>
             </div>
