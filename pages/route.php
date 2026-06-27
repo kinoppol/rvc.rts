@@ -58,6 +58,9 @@ $pending = fetchAll("SELECT * FROM documents_in WHERE status='pending_director' 
           <td>
             <div class="fx g2x">
               <button class="btn bg bsm" onclick="openDocModal(<?= (int)$d['id'] ?>)">👁</button>
+              <?php if ($d['file_path']): foreach (array_filter(explode(',', $d['file_path'])) as $fi => $fn): ?>
+                <a class="btn bs bsm" href="/rvc.rts/uploads/documents/<?= urlencode(trim($fn)) ?>" target="_blank" title="ดูไฟล์แนบ <?= $fi+1 ?>">📄<?= count(array_filter(explode(',', $d['file_path']))) > 1 ? ' '.($fi+1) : '' ?></a>
+              <?php endforeach; endif ?>
               <button class="btn bp bsm" onclick="openDeputyModal(<?= (int)$d['id'] ?>, '<?= e(addslashes($d['doc_number'])) ?>')">✍️ ให้ความเห็น</button>
             </div>
           </td>
@@ -90,6 +93,9 @@ $pending = fetchAll("SELECT * FROM documents_in WHERE status='pending_director' 
           <td>
             <div class="fx g2x">
               <button class="btn bg bsm" onclick="openDocModal(<?= (int)$d['id'] ?>)">👁</button>
+              <?php if ($d['file_path']): foreach (array_filter(explode(',', $d['file_path'])) as $fi => $fn): ?>
+                <a class="btn bs bsm" href="/rvc.rts/uploads/documents/<?= urlencode(trim($fn)) ?>" target="_blank" title="ดูไฟล์แนบ <?= $fi+1 ?>">📄<?= count(array_filter(explode(',', $d['file_path']))) > 1 ? ' '.($fi+1) : '' ?></a>
+              <?php endforeach; endif ?>
               <button class="btn bp bsm" onclick="openAssignModal(<?= (int)$d['id'] ?>, '<?= e(addslashes($d['doc_number'])) ?>')">✅ มอบหมาย</button>
             </div>
           </td>
