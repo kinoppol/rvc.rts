@@ -151,8 +151,10 @@ let deputyDocId = null;
 function openDeputyModal(id, num) {
     deputyDocId = id;
     document.getElementById('deputy-title').textContent = 'ให้ความเห็น — ' + num;
-    document.getElementById('dep-note').value = '';
+    const ta = document.getElementById('dep-note');
+    ta.value = 'เรียน ผู้อำนวยการ\n';
     openModal('deputy-modal');
+    setTimeout(() => { ta.setSelectionRange(ta.value.length, ta.value.length); ta.focus(); }, 100);
 }
 async function doDeputyNote() {
     const note = document.getElementById('dep-note').value.trim();

@@ -64,7 +64,7 @@ $DEPTS = ['ฝ่ายบริหารทรัพยากร','ฝ่าย
 
       <div class="fg">
         <label class="fl">ความเห็น / สรุปเรื่อง (เกษียน) <span class="req">*</span></label>
-        <textarea class="fc" id="ann-txt" style="min-height:110px" placeholder="เรียน รองฯ ฝ่ายบริหารฯ — ..."></textarea>
+        <textarea class="fc" id="ann-txt" style="min-height:110px"></textarea>
       </div>
       <div class="g2">
         <div class="fg">
@@ -112,6 +112,12 @@ $DEPTS = ['ฝ่ายบริหารทรัพยากร','ฝ่าย
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     initChips('dept-select2', 'dept-chips2', 'f-depts2');
+    const annTxt = document.getElementById('ann-txt');
+    if (annTxt && !annTxt.value.trim()) {
+        annTxt.value = 'เรียน ผู้อำนวยการ\n';
+        annTxt.setSelectionRange(annTxt.value.length, annTxt.value.length);
+        annTxt.focus();
+    }
 });
 
 async function saveAnnotation(docId) {
