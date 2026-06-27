@@ -235,6 +235,24 @@ $uploadSize = array_sum(array_map('filesize', glob(__DIR__ . '/../uploads/docume
     </div>
   </div>
 
+  <!-- ── Impersonate modal ──────────────────────────────── -->
+  <div class="ov hidden" id="imp-modal">
+    <div class="mdl" style="max-width:400px;text-align:center">
+      <div class="mb" style="padding:32px 28px 20px">
+        <div style="font-size:48px;margin-bottom:12px">👁️</div>
+        <div style="font-size:16px;font-weight:700;margin-bottom:8px">สวมสิทธิ์ผู้ใช้</div>
+        <div style="font-size:13.5px;color:var(--tx2);line-height:1.7">
+          คุณจะเข้าสู่ระบบในนาม<br><strong id="imp-name" style="color:var(--p)"></strong><br>
+          <span style="font-size:12.5px;margin-top:8px;display:block">เมื่อลงชื่อออก ระบบจะกลับมาเป็น Admin โดยอัตโนมัติ</span>
+        </div>
+      </div>
+      <div class="mf" style="justify-content:center;gap:12px;padding:16px 24px 24px">
+        <button class="btn bg" style="min-width:100px" onclick="closeModal('imp-modal')">ยกเลิก</button>
+        <button class="btn bp" style="min-width:140px" id="imp-confirm-btn">👁️ สวมสิทธิ์</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ── Danger zone ───────────────────────────────────── -->
   <div class="card" style="border-color:var(--er)">
     <div class="ch" style="background:#fff1f2"><span class="ct" style="color:var(--er)">⚠️ Danger Zone</span></div>
@@ -745,11 +763,26 @@ async function admSaveUser() {
 }
 
 // ── Impersonate ───────────────────────────────────────────────────────
+let _impId = null;
 function impersonate(id, name) {
-    if (!confirm(`สวมสิทธิ์ในนาม "${name}" ?\n\nเมื่อลงชื่อออก ระบบจะกลับมาเป็น Admin โดยอัตโนมัติ`)) return;
-    api('/rvc.rts/api/impersonate.php', 'POST', { id })
-        .then(() => { location.href = '/rvc.rts/'; })
-        .catch(e => toast('ไม่สามารถสวมสิทธิ์ได้: ' + e.message, 'er'));
+    _impId = id;
+    document.getElementById('imp-name').textContent = name;
+    document.getElementById('imp-confirm-btn').onclick = doImpersonate;
+    openModal('imp-modal');
+}
+async function doImpersonate() {
+    if (!_impId) return;
+    const btn = document.getElementById('imp-confirm-btn');
+    btn.disabled = true; btn.textContent = 'กำลังสวมสิทธิ์...';
+    try {
+        await api('/rvc.rts/api/impersonate.php', 'POST', { id: _impId });
+        location.href = '/rvc.rts/';
+    } catch(e) {
+        let msg = e.message;
+        try { msg = JSON.parse(msg).error || msg; } catch(_) {}
+        toast('ไม่สามารถสวมสิทธิ์ได้: ' + msg, 'er');
+        btn.disabled = false; btn.textContent = '👁️ สวมสิทธิ์';
+    }
 }
 
 // ── Toggle active ─────────────────────────────────────────────────────
