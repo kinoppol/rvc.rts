@@ -297,7 +297,14 @@ async function openDocModal(docId) {
         document.getElementById('dm-tl-dep').className  = 'tld' + depDone;
         document.getElementById('dm-tl-dir').className  = 'tld' + dirDone;
         document.getElementById('dm-tl-rep').className  = 'tld' + repDone;
-        document.getElementById('dm-ann-txt').textContent  = d.annotation  || '';
+        document.getElementById('dm-ann-txt').textContent = d.annotation || '';
+        // Show edit button for annotation if user is creator or admin
+        const annEditBtn = document.getElementById('dm-ann-edit-btn');
+        if (annEditBtn) {
+            const canEdit = window.__ME && (window.__ME.role === 'admin' || window.__ME.id === d.created_by);
+            annEditBtn.style.display = (canEdit && d.annotation) ? '' : 'none';
+            annEditBtn.dataset.docId = d.id;
+        }
         document.getElementById('dm-dep-txt').textContent  = d.deputy_note || '';
         document.getElementById('dm-dir-txt').textContent  = d.director_note || '';
         document.getElementById('dm-rep-txt').textContent  = d.reply_text  || '';
@@ -336,6 +343,35 @@ async function openDocModal(docId) {
 }
 
 let _editDocData = null;
+let _annotEditDocId = null;
+
+function toggleAnnotEdit() {
+    const area = document.getElementById('dm-ann-edit-area');
+    const txt  = document.getElementById('dm-ann-txt');
+    const btn  = document.getElementById('dm-ann-edit-btn');
+    if (!area) return;
+    const opening = area.style.display === 'none';
+    area.style.display = opening ? '' : 'none';
+    txt.style.display  = opening ? 'none' : '';
+    btn.textContent    = opening ? '✕ ยกเลิก' : '✏️ แก้ไข';
+    if (opening) {
+        _annotEditDocId = document.getElementById('dm-ann-edit-btn').dataset.docId;
+        document.getElementById('dm-ann-edit-txt').value = txt.dataset.raw || txt.textContent;
+        document.getElementById('dm-ann-edit-txt').focus();
+    }
+}
+
+async function saveAnnotEdit() {
+    const newTxt = document.getElementById('dm-ann-edit-txt').value.trim();
+    if (!newTxt) { toast('ความเห็นต้องไม่ว่าง', 'er'); return; }
+    try {
+        await api(`/rvc.rts/api/documents.php?id=${_annotEditDocId}`, { method:'PUT', body: JSON.stringify({ annotation: newTxt, _edit_annot: true }) });
+        document.getElementById('dm-ann-txt').textContent = newTxt;
+        document.getElementById('dm-ann-txt').dataset.raw = newTxt;
+        toggleAnnotEdit();
+        toast('บันทึกเรียบร้อย', 'ok');
+    } catch (e) { toast('เกิดข้อผิดพลาด', 'er'); }
+}
 
 function openEditDocById(id) {
     // Set the doc id on the edit button so openEditDocModal can read it

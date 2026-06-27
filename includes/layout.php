@@ -174,9 +174,11 @@ HTML;
 
 HTML;
     renderDocModal();
+    $meJson = json_encode(['id' => (int)$user['id'], 'role' => $user['role']]);
     echo <<<HTML
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous"></script>
 <script>if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+<script>window.__ME={$meJson};</script>
 <script src="/rvc.rts/assets/js/app.js"></script>
 </body>
 </html>
@@ -204,8 +206,21 @@ function renderDocModal(): void {
       <div class="tl">
         <div class="tli">
           <div class="tld" id="dm-tl-ann"></div>
-          <div class="tlt">งานบริหารงานทั่วไป — เกษียนหนังสือ</div>
-          <div class="tln" style="margin-top:5px" id="dm-ann-row"><div class="an-lbl">เกษียน</div><div id="dm-ann-txt"></div></div>
+          <div class="tlt" style="display:flex;align-items:center;gap:8px">
+            <span>งานบริหารงานทั่วไป — เกษียนหนังสือ</span>
+            <button id="dm-ann-edit-btn" style="display:none;background:none;border:1px solid var(--bd);border-radius:var(--r2);padding:1px 8px;font-size:11px;cursor:pointer;color:var(--tx2)" onclick="toggleAnnotEdit()">✏️ แก้ไข</button>
+          </div>
+          <div class="tln" style="margin-top:5px" id="dm-ann-row">
+            <div class="an-lbl">เกษียน</div>
+            <div id="dm-ann-txt"></div>
+            <div id="dm-ann-edit-area" style="display:none;margin-top:8px">
+              <textarea id="dm-ann-edit-txt" class="fc" style="min-height:80px;font-size:13px"></textarea>
+              <div class="fx g2x" style="margin-top:6px;justify-content:flex-end">
+                <button class="btn bg bsm" onclick="toggleAnnotEdit()">ยกเลิก</button>
+                <button class="btn bp bsm" onclick="saveAnnotEdit()">💾 บันทึก</button>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="tli">
           <div class="tld" id="dm-tl-dep"></div>

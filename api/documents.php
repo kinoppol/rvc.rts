@@ -111,6 +111,13 @@ if ($method === 'PUT') {
     if (in_array($doc['status'], $pendingStatuses) && ($data['_edit'] ?? false)) {
         $allowed = array_merge($allowed, ['received_date','from_org','from_short','subject','doc_type','pages']);
     }
+    // Allow editing annotation text by creator or admin
+    if ($data['_edit_annot'] ?? false) {
+        $isCreator = (int)$doc['created_by'] === (int)$user['id'];
+        $isAdmin   = $user['role'] === 'admin';
+        if (!$isCreator && !$isAdmin) jsonResponse(['error' => 'ไม่มีสิทธิ์แก้ไขความเห็น'], 403);
+        $allowed[] = 'annotation';
+    }
     $upd = [];
     foreach ($allowed as $f) {
         if (array_key_exists($f, $data)) $upd[$f] = $data[$f];
