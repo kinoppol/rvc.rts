@@ -78,6 +78,7 @@ if ($method === 'POST') {
         'urgency'       => $data['urgency']    ?? 'normal',
         'secrecy'       => $data['secrecy']    ?? 'none',
         'deputy_id'     => $deputyId,
+        'file_path'     => $data['file_path']  ?? null,
         'annotation'    => $data['annotation'] ?? null,
         'status'        => $initStatus,
         'created_by'    => $user['id'],
