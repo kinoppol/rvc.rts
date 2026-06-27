@@ -11,6 +11,8 @@ function applyTheme(t) {
         ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
         : t;
     el.dataset.theme = resolved;
+    // Sync to body so modals appended to body also get dark-mode variables
+    document.body.dataset.theme = resolved;
     const btn = document.getElementById('theme-btn');
     if (btn) btn.textContent = THEME_ICONS[t] || '☀️';
 }
@@ -49,7 +51,13 @@ function toast(msg, type = '') {
 }
 
 // ── Modal helper ──────────────────────────────────────────────────────
-function openModal(id) { document.getElementById(id)?.classList.remove('hidden'); }
+function openModal(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    // Move to body to escape any stacking-context trap
+    if (el.parentElement !== document.body) document.body.appendChild(el);
+    el.classList.remove('hidden');
+}
 function closeModal(id) { document.getElementById(id)?.classList.add('hidden'); }
 
 // Close modal on backdrop click
@@ -98,10 +106,29 @@ function syncInput(chips, inp) {
 }
 
 // ── File upload zone ──────────────────────────────────────────────────
-function initUploadZone(zoneId, fileInputId, displayId) {
+// ── PDF page counter (uses PDF.js CDN) ───────────────────────────────
+async function getPdfPageCount(file) {
+    try {
+        if (!window.pdfjsLib) return null;
+        const buf = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+        return pdf.numPages;
+    } catch(e) { return null; }
+}
+
+// ── Upload zone (multi-file) ──────────────────────────────────────────
+function initUploadZone(zoneId, fileInputId, displayId, opts = {}) {
     const zone = document.getElementById(zoneId);
     const fi   = document.getElementById(fileInputId);
     if (!zone || !fi) return;
+
+    fi.multiple = true;
+    zone._uploadOpts  = opts;
+    zone._fileInputId = fileInputId;
+
+    const addFiles = files => {
+        [...files].forEach(f => handleFile(f, displayId, zone, opts));
+    };
 
     zone.addEventListener('click', () => fi.click());
     zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.borderColor = 'var(--p)'; });
@@ -109,20 +136,115 @@ function initUploadZone(zoneId, fileInputId, displayId) {
     zone.addEventListener('drop', e => {
         e.preventDefault();
         zone.style.borderColor = '';
-        if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0], displayId, zone);
+        if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
     });
     fi.addEventListener('change', () => {
-        if (fi.files[0]) handleFile(fi.files[0], displayId, zone);
+        if (fi.files.length) { addFiles(fi.files); fi.value = ''; }
     });
 }
 
-function handleFile(file, displayId, zone) {
+// Shared store for uploaded files
+window._uploadedFiles = window._uploadedFiles || [];
+
+function _fileNameWithoutExt(name) {
+    return name.replace(/\.[^.]+$/, '');
+}
+
+async function handleFile(file, displayId, zone, opts = {}) {
+    window._uploadedFiles = window._uploadedFiles || [];
+    if (window._uploadedFiles.find(f => f.name === file.name && f.size === file.size)) return;
+    window._uploadedFiles.push(file);
+
     const display = document.getElementById(displayId);
-    if (display) {
-        display.innerHTML = `<div class="alrt ai"><span>📎</span><span>${file.name} (${(file.size/1024/1024).toFixed(1)} MB)</span></div>`;
-        display.dataset.file = '1';
-    }
+    if (!display) return;
+
+    // Hide drop zone, show display area
     zone.style.display = 'none';
+
+    // Ensure "เพิ่มไฟล์" button exists right after display
+    let addBtn = document.getElementById('_upload-add-btn-' + displayId);
+    if (!addBtn) {
+        addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.id = '_upload-add-btn-' + displayId;
+        addBtn.className = 'btn bg bsm';
+        addBtn.style = 'margin-top:6px';
+        addBtn.textContent = '➕ เพิ่มไฟล์';
+        addBtn.onclick = () => { document.querySelector(`input[type=file]#${zone._fileInputId || ''}`) && document.querySelector(`input[type=file]#${zone._fileInputId}`).click(); };
+        display.after(addBtn);
+    }
+
+    // File row
+    const safeName = file.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    const row = document.createElement('div');
+    row.className = 'alrt ai';
+    row.style = 'display:flex;align-items:center;gap:8px;margin-bottom:6px';
+    row.dataset.filename = file.name;
+    row.innerHTML = `<span>📎</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${file.name}">${file.name} <em style="color:var(--tx3)">(${(file.size/1024/1024).toFixed(1)} MB)</em></span><span class="page-count" style="font-size:12px;color:var(--tx2);white-space:nowrap;margin-left:4px">กำลังนับ...</span><button type="button" style="background:none;border:none;cursor:pointer;color:var(--er);font-size:18px;line-height:1;padding:0 2px" onclick="removeUploadedFile('${safeName}','${displayId}','${zone.id}')">×</button>`;
+    display.appendChild(row);
+
+    // Count pages
+    const pages = await getPdfPageCount(file);
+    const pc = row.querySelector('.page-count');
+    if (pc) pc.textContent = pages !== null ? `${pages} หน้า` : '';
+
+    // Update total pages field
+    if (opts.pagesFieldId) recalcPages(opts.pagesFieldId);
+
+    // Auto-suggest subject from filename when only 1 file and field is empty
+    if (opts.subjectFieldId) {
+        const subj = document.getElementById(opts.subjectFieldId);
+        if (subj && !subj.value.trim() && window._uploadedFiles.length === 1) {
+            subj.value = _fileNameWithoutExt(file.name);
+            subj.dataset.autoFilled = '1';
+        } else if (subj && subj.dataset.autoFilled === '1') {
+            // Multiple files now — clear the auto-suggestion to avoid confusion
+            subj.value = '';
+            delete subj.dataset.autoFilled;
+        }
+    }
+}
+
+function removeUploadedFile(name, displayId, zoneId) {
+    window._uploadedFiles = (window._uploadedFiles || []).filter(f => f.name !== name);
+    const display = document.getElementById(displayId);
+    const zone    = document.getElementById(zoneId);
+    if (display) {
+        const row = [...display.querySelectorAll('[data-filename]')].find(el => el.dataset.filename === name);
+        if (row) row.remove();
+        const remaining = display.querySelectorAll('[data-filename]').length;
+        if (!remaining) {
+            if (zone) zone.style.display = '';
+            const addBtn = document.getElementById('_upload-add-btn-' + displayId);
+            if (addBtn) addBtn.remove();
+        }
+    }
+    // Recalc pages
+    const opts = zone?._uploadOpts || {};
+    if (opts.pagesFieldId) recalcPages(opts.pagesFieldId);
+    // Reset subject if it was auto-filled and we're back to 1 or 0 files
+    if (opts.subjectFieldId) {
+        const subj = document.getElementById(opts.subjectFieldId);
+        if (subj && subj.dataset.autoFilled === '1') {
+            if (window._uploadedFiles.length === 1) {
+                subj.value = _fileNameWithoutExt(window._uploadedFiles[0].name);
+            } else if (window._uploadedFiles.length === 0) {
+                subj.value = '';
+                delete subj.dataset.autoFilled;
+            }
+        }
+    }
+}
+
+async function recalcPages(fieldId) {
+    const field = document.getElementById(fieldId);
+    if (!field) return;
+    let total = 0;
+    for (const f of (window._uploadedFiles || [])) {
+        const n = await getPdfPageCount(f);
+        if (n) total += n;
+    }
+    if (total > 0) field.value = total;
 }
 
 // ── AJAX helper ───────────────────────────────────────────────────────

@@ -1,4 +1,6 @@
 <?php
+date_default_timezone_set('Asia/Bangkok');
+
 define('DB_HOST', 'localhost');
 define('DB_PORT', '3306');
 define('DB_NAME', 'rvc_rts');

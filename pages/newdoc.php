@@ -2,13 +2,17 @@
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/functions.php';
 
-// Generate next doc number
-$lastNo = fetchValue("SELECT doc_number FROM documents_in ORDER BY id DESC LIMIT 1");
-$nextNum = 1;
-if ($lastNo && preg_match('/(\d+)/', $lastNo, $m)) $nextNum = (int)$m[1] + 1;
-$nextDocNo = sprintf('รบ.%03d/2568', $nextNum);
+// Generate next doc number from settings
+$docCfgRows = fetchAll("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('doc_prefix','doc_year','doc_seq')");
+$docCfg     = array_column($docCfgRows, 'setting_value', 'setting_key');
+$docPrefix  = $docCfg['doc_prefix'] ?? 'รบ';
+$docYear    = (int)($docCfg['doc_year'] ?? (date('Y') + 543));
+$docSeq     = (int)($docCfg['doc_seq'] ?? 0) + 1;
+$nextDocNo  = sprintf('%s/%03d/%d', $docPrefix, $docSeq, $docYear);
 
-$DEPTS = ['ฝ่ายบริหารทรัพยากร','ฝ่ายยุทธศาสตร์และแผนงาน','ฝ่ายกิจการนักเรียน นักศึกษา','ฝ่ายวิชาการ',
+$DEPTS_DB = fetchAll("SELECT name FROM departments WHERE active=1 ORDER BY depgroup_id, name");
+$DEPTS = $DEPTS_DB ? array_column($DEPTS_DB, 'name')
+       : ['ฝ่ายบริหารทรัพยากร','ฝ่ายยุทธศาสตร์และแผนงาน','ฝ่ายกิจการนักเรียน นักศึกษา','ฝ่ายวิชาการ',
           'งานบริหารงานทั่วไป','งานการเงิน','งานพัสดุ','งานทะเบียน',
           'แผนกช่างยนต์','แผนกช่างอิเล็กทรอนิกส์','แผนกคอมพิวเตอร์ธุรกิจ'];
 ?>
@@ -90,12 +94,12 @@ $DEPTS = ['ฝ่ายบริหารทรัพยากร','ฝ่าย
         </div>
       </div>
       <div class="fg">
-        <label class="fl">ไฟล์เอกสาร PDF</label>
-        <div class="upz" id="upload-zone">
+        <label class="fl">ไฟล์เอกสาร PDF <span style="font-size:12px;color:var(--tx2)">(อัปโหลดได้หลายไฟล์ รวมจำนวนหน้าอัตโนมัติ)</span></label>
+        <div class="upz" id="upload-zone" style="cursor:pointer">
           <div style="font-size:32px;margin-bottom:6px">📄</div>
-          <div style="color:var(--tx2)">คลิกเพื่ออัปโหลด PDF <em style="color:var(--tx3);font-size:12px">(ขนาดไม่เกิน 20MB)</em></div>
+          <div style="color:var(--tx2)">คลิกหรือลากไฟล์มาวางที่นี่ <em style="color:var(--tx3);font-size:12px">(PDF, แต่ละไฟล์ไม่เกิน 20MB)</em></div>
         </div>
-        <div id="upload-display" style="display:none"></div>
+        <div id="upload-display"></div>
       </div>
     </div>
 
@@ -126,20 +130,31 @@ $DEPTS = ['ฝ่ายบริหารทรัพยากร','ฝ่าย
       </div>
     </div>
 
-    <!-- Step 2: Departments -->
+    <!-- Step 2: Departments + Personnel -->
     <div id="step-2" style="display:none">
       <div class="fg">
-        <label class="fl">กำหนดฝ่าย/งาน/แผนกที่เกี่ยวข้อง</label>
+        <label class="fl">ฝ่าย/งาน/แผนกที่เกี่ยวข้อง</label>
         <select class="fc" id="dept-select">
           <option value="">-- เลือกฝ่าย/งาน --</option>
           <?php foreach ($DEPTS as $d): ?>
             <option value="<?= e($d) ?>"><?= e($d) ?></option>
           <?php endforeach ?>
         </select>
-        <div class="chips mt3" id="dept-chips"></div>
+        <div class="chips mt2" id="dept-chips"></div>
         <input type="hidden" id="f-depts">
       </div>
-      <div class="alrt ai mt3"><span>ℹ️</span><span>ระดับลับที่สุด: รายชื่อผู้เข้าถึงจะถูกกำหนดโดยผู้อำนวยการเท่านั้น</span></div>
+
+      <div class="fg mt3">
+        <label class="fl">บุคลากรที่เกี่ยวข้อง <span style="font-size:12px;color:var(--tx2)">(ค้นหาชื่อหรือตำแหน่ง)</span></label>
+        <div style="position:relative">
+          <input class="fc" id="personnel-search" autocomplete="off" placeholder="พิมพ์ชื่อหรือตำแหน่ง..." oninput="personnelSearch(this.value)">
+          <div class="org-dd hidden" id="personnel-dd" style="top:calc(100% + 2px)"></div>
+        </div>
+        <div class="chips mt2" id="personnel-chips"></div>
+        <input type="hidden" id="f-personnel">
+      </div>
+
+      <div class="alrt ai mt3"><span>ℹ️</span><span>เลือกทั้งฝ่าย/งาน และบุคลากรที่ต้องดำเนินการกับหนังสือนี้</span></div>
     </div>
 
     <!-- Step 3: Summary -->
@@ -160,6 +175,10 @@ $DEPTS = ['ฝ่ายบริหารทรัพยากร','ฝ่าย
             <div id="sum-annot"></div>
           </div>
           <div class="chips mt3" id="sum-depts"></div>
+          <div id="sum-personnel-wrap" style="display:none;margin-top:8px">
+            <div style="font-size:11.5px;color:var(--tx2);margin-bottom:4px">บุคลากรที่เกี่ยวข้อง</div>
+            <div class="chips" id="sum-personnel"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -242,21 +261,32 @@ function fillSummary() {
 
     const deptsEl = document.getElementById('sum-depts');
     deptsEl.innerHTML = depts ? depts.split(',').filter(Boolean).map(d => `<span class="chip">${d}</span>`).join('') : '';
+
+    const personnelVal = document.getElementById('f-personnel').value;
+    const pWrap = document.getElementById('sum-personnel-wrap');
+    const pEl   = document.getElementById('sum-personnel');
+    if (personnelVal) {
+        pEl.innerHTML = personnelVal.split(',').filter(Boolean).map(p => `<span class="chip">${p}</span>`).join('');
+        pWrap.style.display = '';
+    } else {
+        pWrap.style.display = 'none';
+    }
 }
 
 async function wizardSave() {
     const btn = document.getElementById('btn-save');
     btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
     try {
-        // Upload file if selected
-        let filename = null;
-        const fi = document.getElementById('file-input');
-        if (fi.files[0]) {
+        // Upload all selected files
+        let filenames = [];
+        const files = window._uploadedFiles || [];
+        for (const f of files) {
             const fd = new FormData();
-            fd.append('file', fi.files[0]);
+            fd.append('file', f);
             const r = await api('/rvc.rts/api/upload.php', 'POST', fd);
-            filename = r.filename;
+            if (r.filename) filenames.push(r.filename);
         }
+        const filename = filenames.join(',') || null;
 
         const payload = {
             doc_number:   document.getElementById('f-docno').value,
@@ -270,6 +300,7 @@ async function wizardSave() {
             secrecy:      document.getElementById('f-secrecy').value,
             annotation:   document.getElementById('f-annot').value,
             depts:        document.getElementById('f-depts').value,
+            personnel:    document.getElementById('f-personnel').value,
             file_path:    filename,
         };
         await api('/rvc.rts/api/documents.php', 'POST', payload);
@@ -301,13 +332,26 @@ async function orgSearch(q) {
                 return;
             }
             addRow.style.display = 'none';
-            dd.innerHTML = items.map(o =>
-                `<div class="org-item" onmousedown="orgSelect(${JSON.stringify(o.name)},${JSON.stringify(o.short_name||'')})" >
+            // Store items for click handler
+            window._orgItems = items;
+            dd.innerHTML = items.map((o, i) =>
+                `<div class="org-item" data-org-idx="${i}">
                     <span class="org-name">${esc(o.name)}</span>
                     ${o.short_name ? `<span class="org-short">${esc(o.short_name)}</span>` : ''}
                 </div>`
             ).join('') +
-            `<div class="org-item org-add" onmousedown="orgAddNew()">➕ เพิ่ม "${esc(q)}" เป็นหน่วยงานใหม่</div>`;
+            `<div class="org-item org-add" data-org-add="1">➕ เพิ่ม "${esc(q)}" เป็นหน่วยงานใหม่</div>`;
+            dd.querySelectorAll('[data-org-idx]').forEach(el => {
+                el.addEventListener('mousedown', e => {
+                    e.preventDefault();
+                    const o = window._orgItems[+el.dataset.orgIdx];
+                    if (o) orgSelect(o.name, o.short_name || '');
+                });
+            });
+            dd.querySelector('[data-org-add]')?.addEventListener('mousedown', e => {
+                e.preventDefault();
+                orgAddNew();
+            });
             dd.classList.remove('hidden');
         } catch(e) {}
     }, 200);
@@ -339,16 +383,72 @@ async function orgAddNew() {
 
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-// Close dropdown on outside click
+// Close dropdowns on outside click
 document.addEventListener('click', e => {
-    if (!document.getElementById('org-wrap')?.contains(e.target)) {
+    if (!document.getElementById('org-wrap')?.contains(e.target))
         document.getElementById('org-dd')?.classList.add('hidden');
-    }
+    if (!e.target.closest('#personnel-search') && !e.target.closest('#personnel-dd'))
+        document.getElementById('personnel-dd')?.classList.add('hidden');
 });
+
+// ── Personnel search ──────────────────────────────────────────────────
+let _personnelTimer, _personnelSelected = [];
+
+async function personnelSearch(q) {
+    clearTimeout(_personnelTimer);
+    const dd = document.getElementById('personnel-dd');
+    if (q.length < 1) { dd.classList.add('hidden'); return; }
+    _personnelTimer = setTimeout(async () => {
+        try {
+            const res = await api('/rvc.rts/api/users.php?q=' + encodeURIComponent(q));
+            const items = (res.rows || []).filter(u => !_personnelSelected.find(s => s.id === u.id));
+            if (!items.length) { dd.classList.add('hidden'); return; }
+            window._personnelItems = items;
+            dd.innerHTML = items.map((u, i) =>
+                `<div class="org-item" data-pi="${i}">
+                    <span class="org-name">${esc(u.name)}</span>
+                    <span class="org-short" style="font-size:12px;color:var(--tx2)">${esc(u.title||'')}${u.dept ? ' · '+esc(u.dept) : ''}</span>
+                </div>`
+            ).join('');
+            dd.querySelectorAll('[data-pi]').forEach(el => {
+                el.addEventListener('mousedown', e => {
+                    e.preventDefault();
+                    personnelSelect(window._personnelItems[+el.dataset.pi]);
+                });
+            });
+            dd.classList.remove('hidden');
+        } catch(e) {}
+    }, 200);
+}
+
+function personnelSelect(u) {
+    if (_personnelSelected.find(s => s.id === u.id)) return;
+    _personnelSelected.push(u);
+    renderPersonnelChips();
+    document.getElementById('personnel-search').value = '';
+    document.getElementById('personnel-dd').classList.add('hidden');
+}
+
+function removePersonnel(id) {
+    _personnelSelected = _personnelSelected.filter(u => u.id !== id);
+    renderPersonnelChips();
+}
+
+function renderPersonnelChips() {
+    const chips = document.getElementById('personnel-chips');
+    chips.innerHTML = _personnelSelected.map(u =>
+        `<span class="chip" style="display:inline-flex;align-items:center;gap:4px">
+            ${esc(u.name)}${u.title ? ` <em style="font-size:11px;opacity:.7">${esc(u.title)}</em>` : ''}
+            <span style="cursor:pointer;margin-left:2px;color:var(--er)" onclick="removePersonnel(${u.id})">×</span>
+        </span>`
+    ).join('');
+    document.getElementById('f-personnel').value = _personnelSelected.map(u => u.name).join(',');
+}
 
 // Init upload zone
 document.addEventListener('DOMContentLoaded', () => {
-    initUploadZone('upload-zone', 'file-input', 'upload-display');
+    window._uploadedFiles = [];
+    initUploadZone('upload-zone', 'file-input', 'upload-display', { pagesFieldId: 'f-pages', subjectFieldId: 'f-subject' });
     initChips('dept-select', 'dept-chips', 'f-depts');
 });
 </script>

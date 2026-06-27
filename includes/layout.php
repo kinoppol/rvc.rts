@@ -17,12 +17,16 @@ HTML;
 }
 
 function renderShell(array $user, string $page, string $pageTitle, callable $content): void {
+    require_once __DIR__ . '/auth.php';
+    $isImpersonating = is_impersonating();
     renderHead($pageTitle);
 
     $logo = '/rvc.rts/project/uploads/logo-1782108162561.png';
     $schoolName = SCHOOL_NAME;
     $appName = APP_NAME;
-    $av = e(avatarChars($user['name']));
+    $av    = e(avatarChars($user['name']));
+    $avImg = avatarHtml($user, '32px', '11px');
+    $avImgHdr = avatarHtml($user, '34px', '12px');
     $uname = e($user['name']);
     $urole = USER_ROLES[$user['role']]['l'] ?? $user['role'];
     $udept = e($user['dept']);
@@ -38,24 +42,25 @@ function renderShell(array $user, string $page, string $pageTitle, callable $con
     $taskCount = (int)fetchValue("SELECT COUNT(*) FROM tasks WHERE status != 'done'");
 
     $navGroups = [
-        'สารบรรณ' => [
+        ['📁', 'สารบรรณ', [
             ['register', '📋', 'ทะเบียนหนังสือรับ-ส่ง', null],
             ['newdoc',   '📥', 'รับเอกสารใหม่', null],
             ['annotate', '✏️', 'เกษียนหนังสือ', $annCount ?: null],
-        ],
-        'การมอบหมาย' => [
+        ]],
+        ['📌', 'การมอบหมาย', [
             ['route',  '📤', 'เสนอ / มอบหมาย', null],
             ['tasks',  '📊', 'ติดตามงาน', $taskCount ?: null],
             ['reply',  '↩️', 'เกษียนตอบ / รายงาน', null],
-        ],
-        'องค์กร' => [
+        ]],
+        ['🏛️', 'องค์กร', [
             ['orgchart', '🏢', 'โครงสร้างองค์กร', null],
-            ['users',    '👥', 'จัดการผู้ใช้งาน', null],
-        ],
-        'ระบบ' => array_filter([
+        ]],
+        ['⚙️', 'ระบบ', array_values(array_filter([
             ['settings', '⚙️', 'ตั้งค่าระบบ', null],
-            $user['role'] === 'admin' ? ['admin', '🔧', 'จัดการระบบ (Admin)', null] : null,
-        ]),
+            $user['role'] === 'admin' ? ['users',  '👥', 'จัดการผู้ใช้งาน', null] : null,
+            $user['role'] === 'admin' ? ['import', '🔄', 'โอนข้อมูลบุคลากร', null] : null,
+            $user['role'] === 'admin' ? ['admin',  '🔧', 'จัดการระบบ (Admin)', null] : null,
+        ]))],
     ];
 
     echo <<<HTML
@@ -73,24 +78,45 @@ function renderShell(array $user, string $page, string $pageTitle, callable $con
   <nav class="sb-nav">
 HTML;
 
-    // Dashboard
+    // Dashboard (standalone — always visible)
     $cls = $page === 'dashboard' ? 'si act' : 'si';
     $bdg = $taskCount ? "<span class=\"si-bdg\">{$taskCount}</span>" : '<span class="si-bdg"></span>';
     echo "<a class=\"{$cls}\" href=\"/rvc.rts/?page=dashboard\"><span class=\"si-ico\">🏠</span><span class=\"si-lbl\">หน้าหลัก</span>{$bdg}</a>\n";
 
-    foreach ($navGroups as $groupName => $items) {
-        echo "<div class=\"sb-sec\">" . e($groupName) . "</div>\n";
+    // Collapsible groups
+    $gIdx = 0;
+    foreach ($navGroups as [$gIcon, $groupName, $items]) {
+        $groupActive = false;
+        $groupBadgeTotal = 0;
         foreach ($items as [$key, $icon, $label, $badge]) {
-            $cls = $page === $key ? 'si act' : 'si';
-            $bdgHtml = $badge ? "<span class=\"si-bdg\">{$badge}</span>" : '<span class="si-bdg"></span>';
-            echo "<a class=\"{$cls}\" href=\"/rvc.rts/?page={$key}\"><span class=\"si-ico\">{$icon}</span><span class=\"si-lbl\">" . e($label) . "</span>{$bdgHtml}</a>\n";
+            if ($page === $key) $groupActive = true;
+            $groupBadgeTotal += (int)$badge;
         }
+        $openAttr = $groupActive ? ' open' : '';
+        $gId      = 'sg-' . $gIdx++;
+        $gBdgHtml = $groupBadgeTotal ? "<span class=\"sg-bdg\">{$groupBadgeTotal}</span>" : '';
+
+        echo "<details class=\"sb-grp\"{$openAttr} id=\"{$gId}\">\n";
+        echo "  <summary class=\"sb-sec-toggle\">\n";
+        echo "    <span class=\"sb-grp-ico\">{$gIcon}</span>\n";
+        echo "    <span class=\"sb-sec-lbl\">" . e($groupName) . "</span>\n";
+        echo "    {$gBdgHtml}\n";
+        echo "    <span class=\"sb-chv\"></span>\n";
+        echo "  </summary>\n";
+        echo "  <div class=\"sb-grp-items\">\n";
+        foreach ($items as [$key, $icon, $label, $badge]) {
+            $cls     = $page === $key ? 'si act' : 'si';
+            $bdgHtml = $badge ? "<span class=\"si-bdg\">{$badge}</span>" : '<span class="si-bdg"></span>';
+            echo "    <a class=\"{$cls}\" href=\"/rvc.rts/?page={$key}\"><span class=\"si-ico\">{$icon}</span><span class=\"si-lbl\">" . e($label) . "</span>{$bdgHtml}</a>\n";
+        }
+        echo "  </div>\n";
+        echo "</details>\n";
     }
 
     echo <<<HTML
   </nav>
   <div class="sb-foot">
-    <div class="sb-av">{$av}</div>
+    <div class="sb-av">{$avImg}</div>
     <div class="sb-ui">
       <div class="sb-uname">{$uname}</div>
       <div class="sb-urole">{$udept}</div>
@@ -105,12 +131,22 @@ HTML;
     <div class="hact">
       <button class="hbtn" id="theme-btn" title="เปลี่ยนธีม">☀️</button>
       <button class="hbtn" title="การแจ้งเตือน">🔔<span class="ndot"></span></button>
-      <div class="uav" title="{$uname}">{$av}</div>
+      <div class="uav" title="{$uname}">{$avImgHdr}</div>
       <button class="hbtn" onclick="openModal('logout-modal')" title="ออกจากระบบ">🚪</button>
     </div>
   </header>
   <div class="pg" id="page-content">
 HTML;
+    if ($isImpersonating) {
+        $adminUser = fetchOne('SELECT name FROM users WHERE id=?', [$_SESSION['impersonate_admin_id']]);
+        $adminName = e($adminUser['name'] ?? 'Admin');
+        echo <<<HTML
+<div style="position:sticky;top:0;z-index:500;background:#92400e;color:#fff;padding:8px 16px;display:flex;align-items:center;gap:12px;font-size:13px;font-weight:500">
+  <span>👁️ กำลังสวมสิทธิ์ในนาม <strong>{$uname}</strong> — ล็อกอินจริงคือ <strong>{$adminName}</strong></span>
+  <a href="/rvc.rts/logout.php" style="margin-left:auto;background:rgba(255,255,255,.2);color:#fff;padding:4px 14px;border-radius:20px;text-decoration:none;font-size:12.5px">↩ กลับเป็น Admin</a>
+</div>
+HTML;
+    }
 
     $content();
 
@@ -139,6 +175,8 @@ HTML;
 HTML;
     renderDocModal();
     echo <<<HTML
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous"></script>
+<script>if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
 <script src="/rvc.rts/assets/js/app.js"></script>
 </body>
 </html>

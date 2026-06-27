@@ -14,6 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_section'])) {
         'school'   => ['school_name','school_under','school_prov','academic_year'],
         'profile'  => ['profile_name','profile_email'],
         'notif'    => ['notif_new_doc','notif_task','notif_due','notif_assign'],
+        'connect'  => ['rms_base_url'],
         default    => []
     };
     foreach ($keys as $k) {
@@ -89,6 +90,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_section'])) {
     </div>
   </div>
 
+  <!-- External data connection (Admin only) -->
+  <?php
+  require_once __DIR__ . '/../includes/auth.php';
+  $settingsUser = current_user();
+  if ($settingsUser && $settingsUser['role'] === 'admin'):
+  ?>
+  <div class="card">
+    <div class="ch"><span class="ct">🔗 การเชื่อมต่อข้อมูลภายนอก</span></div>
+    <form method="post" class="cb">
+      <input type="hidden" name="save_section" value="connect">
+      <div class="alrt ai mb3">
+        <div>
+          <div style="font-weight:600;margin-bottom:4px">แหล่งข้อมูลบุคลากร (RMS)</div>
+          <div style="font-size:12.5px;color:var(--tx2)">ระบบจะเชื่อมต่อ Base URL นี้ + <code>/api_connection.php?app_name=nutty&data=people</code></div>
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl">Base URL <span class="req">*</span></label>
+        <input class="fc" name="rms_base_url" value="<?= e($cfg['rms_base_url'] ?? 'http://rms.rvc.ac.th') ?>" placeholder="http://rms.rvc.ac.th">
+        <div style="font-size:11.5px;color:var(--tx2);margin-top:4px">
+          URL เต็มที่ใช้งาน: <code id="rms-url-preview"><?= e(rtrim($cfg['rms_base_url'] ?? 'http://rms.rvc.ac.th','/')) ?>/api_connection.php?app_name=nutty&data=people</code>
+        </div>
+      </div>
+      <button class="btn bp" type="submit">💾 บันทึก</button>
+    </form>
+  </div>
+  <?php endif ?>
+
   <!-- Account -->
   <div class="card">
     <div class="ch"><span class="ct">👤 บัญชีผู้ใช้</span></div>
@@ -113,6 +142,15 @@ function selectTheme(t) {
     localStorage.setItem('rts_theme', t);
     applyTheme(t);
     toast('เปลี่ยนธีมเรียบร้อย','ok');
+}
+
+// Live preview RMS URL
+const rmsInput = document.querySelector('[name="rms_base_url"]');
+const rmsPreview = document.getElementById('rms-url-preview');
+if (rmsInput && rmsPreview) {
+    rmsInput.addEventListener('input', () => {
+        rmsPreview.textContent = rmsInput.value.replace(/\/+$/, '') + '/api_connection.php?app_name=nutty&data=people';
+    });
 }
 
 document.addEventListener('DOMContentLoaded', () => {

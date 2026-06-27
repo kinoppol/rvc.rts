@@ -76,6 +76,9 @@ if ($method === 'POST') {
         insert('document_departments', ['doc_id' => $id, 'dept_name' => trim($dept)]);
     }
 
+    // Increment doc_seq so next doc gets the next number
+    query("INSERT INTO settings (setting_key,setting_value) VALUES ('doc_seq',1) ON DUPLICATE KEY UPDATE setting_value=setting_value+1");
+
     jsonResponse(['id' => $id, 'message' => 'บันทึกเรียบร้อย']);
 }
 

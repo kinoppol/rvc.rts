@@ -25,7 +25,21 @@ function require_auth(): array {
 
 function login(string $username, string $password): array|false {
     $user = fetchOne('SELECT * FROM users WHERE username=? AND active=1', [$username]);
-    if (!$user || !password_verify($password, $user['password'])) return false;
+    if (!$user) return false;
+
+    $stored = $user['password'];
+    $ok = false;
+
+    if (password_verify($password, $stored)) {
+        // bcrypt — ปกติ
+        $ok = true;
+    } elseif (strlen($stored) === 32 && ctype_xdigit($stored) && hash_equals($stored, md5($password))) {
+        // MD5 จาก RMS — auto-upgrade เป็น bcrypt
+        $ok = true;
+        update('users', ['password' => password_hash($password, PASSWORD_BCRYPT)], 'id=?', [$user['id']]);
+    }
+
+    if (!$ok) return false;
     session_start_safe();
     session_regenerate_id(true);
     $_SESSION['user_id'] = $user['id'];
@@ -34,7 +48,33 @@ function login(string $username, string $password): array|false {
 
 function logout(): void {
     session_start_safe();
+    // If impersonating, restore admin instead of full logout
+    if (!empty($_SESSION['impersonate_admin_id'])) {
+        $adminId = $_SESSION['impersonate_admin_id'];
+        session_regenerate_id(true);
+        $_SESSION = [];
+        $_SESSION['user_id'] = $adminId;
+        return;
+    }
     session_destroy();
+}
+
+function impersonate(int $targetId): bool {
+    session_start_safe();
+    $me = current_user();
+    if (!$me || $me['role'] !== 'admin') return false;
+    if ($targetId === (int)$me['id']) return false;
+    $target = fetchOne('SELECT id, role FROM users WHERE id=? AND active=1', [$targetId]);
+    if (!$target || $target['role'] === 'admin') return false;
+    session_regenerate_id(true);
+    $_SESSION['user_id']             = $targetId;
+    $_SESSION['impersonate_admin_id'] = (int)$me['id'];
+    return true;
+}
+
+function is_impersonating(): bool {
+    session_start_safe();
+    return !empty($_SESSION['impersonate_admin_id']);
 }
 
 function can(string $role, array $user): bool {

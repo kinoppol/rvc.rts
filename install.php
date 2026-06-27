@@ -51,12 +51,15 @@ try {
     $log[] = "✅ รันคำสั่ง SQL: สำเร็จ {$ok} / ข้ามที่มีอยู่แล้ว {$skip}" . (!empty($errors) ? ' / มีข้อผิดพลาด ' . count($errors) : '');
 
     // ── 4. สร้างโฟลเดอร์ uploads ──────────────────────────────────
-    $upDir = __DIR__ . '/uploads/documents';
-    if (!is_dir($upDir)) {
-        mkdir($upDir, 0755, true);
-        $log[] = '✅ สร้างโฟลเดอร์ uploads/documents/';
-    } else {
-        $log[] = '✅ โฟลเดอร์ uploads/documents/ มีอยู่แล้ว';
+    $uploadDirs = ['uploads/documents', 'uploads/avatars'];
+    foreach ($uploadDirs as $dir) {
+        $fullPath = __DIR__ . '/' . $dir;
+        if (!is_dir($fullPath)) {
+            mkdir($fullPath, 0755, true);
+            $log[] = "✅ สร้างโฟลเดอร์ {$dir}/";
+        } else {
+            $log[] = "✅ โฟลเดอร์ {$dir}/ มีอยู่แล้ว";
+        }
     }
 
     // ── 5. ตรวจสอบผลลัพธ์ ─────────────────────────────────────────

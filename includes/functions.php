@@ -88,7 +88,17 @@ function jsonResponse(array $data, int $status = 200): never {
 }
 
 function avatarChars(string $name): string {
-    // Get last 2 characters for Thai names
     $chars = mb_substr($name, -2, 2, 'UTF-8');
     return $chars ?: mb_substr($name, 0, 2, 'UTF-8');
+}
+
+function avatarHtml(array $user, string $size = '34px', string $fontSize = '12px'): string {
+    $nick = trim($user['nickname'] ?? '');
+    $av   = $nick ? e(mb_substr($nick, 0, 3, 'UTF-8')) : e(avatarChars($user['name'] ?? ''));
+    $name = e($user['name'] ?? '');
+    if (!empty($user['avatar'])) {
+        $src = '/rvc.rts/uploads/avatars/' . e($user['avatar']);
+        return "<img src=\"{$src}\" alt=\"{$name}\" title=\"{$name}\" style=\"width:{$size};height:{$size};border-radius:50%;object-fit:cover;flex-shrink:0\" onerror=\"this.outerHTML='<span style=&quot;width:{$size};height:{$size};border-radius:50%;background:var(--p);color:#fff;display:flex;align-items:center;justify-content:center;font-size:{$fontSize};font-weight:700;flex-shrink:0&quot;>{$av}</span>'\">";
+    }
+    return "<span style=\"width:{$size};height:{$size};border-radius:50%;background:var(--p);color:#fff;display:flex;align-items:center;justify-content:center;font-size:{$fontSize};font-weight:700;flex-shrink:0\">{$av}</span>";
 }

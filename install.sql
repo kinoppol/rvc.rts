@@ -17,12 +17,28 @@ CREATE TABLE IF NOT EXISTS users (
   username   VARCHAR(50)  NOT NULL UNIQUE,
   password   VARCHAR(255) NOT NULL,
   name       VARCHAR(100) NOT NULL,
+  nickname   VARCHAR(50)  DEFAULT '',
   title      VARCHAR(100) DEFAULT '',
-  role       ENUM('director','deputy','head','dept_head','teacher','staff') NOT NULL DEFAULT 'staff',
+  role       ENUM('admin','director','deputy','head','dept_head','teacher','staff') NOT NULL DEFAULT 'staff',
   dept       VARCHAR(150) DEFAULT '',
   active     TINYINT(1)   NOT NULL DEFAULT 1,
   email      VARCHAR(150) DEFAULT '',
+  avatar     VARCHAR(255) DEFAULT '',
   created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- Add columns for existing installations (safe to re-run)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS nickname    VARCHAR(50)  DEFAULT '' AFTER name;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar      VARCHAR(255) DEFAULT '' AFTER email;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS extra_roles JSON         DEFAULT NULL AFTER role;
+
+CREATE TABLE IF NOT EXISTS user_departments (
+  id       INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id  INT UNSIGNED NOT NULL,
+  dep_name VARCHAR(200) NOT NULL,
+  dep_id   INT UNSIGNED DEFAULT NULL,
+  UNIQUE KEY uq_user_dep (user_id, dep_name),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- ------------------------------------------------
@@ -106,6 +122,14 @@ CREATE TABLE IF NOT EXISTS tasks (
 CREATE TABLE IF NOT EXISTS settings (
   setting_key   VARCHAR(100) NOT NULL PRIMARY KEY,
   setting_value TEXT         DEFAULT NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS departments (
+  id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  dep_id      INT UNSIGNED NOT NULL UNIQUE,
+  depgroup_id INT UNSIGNED NOT NULL DEFAULT 0,
+  name        VARCHAR(200) NOT NULL,
+  active      TINYINT(1)   NOT NULL DEFAULT 1
 ) ENGINE=InnoDB;
 
 -- ================================================
