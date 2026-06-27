@@ -13,6 +13,8 @@ if ($isDeputy) {
 }
 
 $pending = fetchAll("SELECT * FROM documents_in WHERE status='pending_director' ORDER BY urgency='critical' DESC, urgency='urgent' DESC, received_date DESC");
+
+$assigned = fetchAll("SELECT * FROM documents_in WHERE status NOT IN ('pending_annotation','pending_deputy','pending_director') ORDER BY updated_at DESC LIMIT 50");
 ?>
 
 <div class="pgh">
@@ -97,6 +99,40 @@ $pending = fetchAll("SELECT * FROM documents_in WHERE status='pending_director' 
                 <button type="button" class="btn bs bsm" onclick="openPdfModal('/rvc.rts/uploads/documents/<?= rawurlencode(trim($fn)) ?>','<?= e(addslashes(trim($fn))) ?>')" title="ดูไฟล์แนบ <?= $fi+1 ?>">📄<?= count(array_filter(explode(',', $d['file_path']))) > 1 ? ' '.($fi+1) : '' ?></button>
               <?php endforeach; endif ?>
               <button class="btn bp bsm" onclick="openAssignModal(<?= (int)$d['id'] ?>, '<?= e(addslashes($d['doc_number'])) ?>')">✅ มอบหมาย</button>
+            </div>
+          </td>
+        </tr>
+      <?php endforeach; endif ?>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Assigned / done -->
+<div class="card mb4">
+  <div class="ch"><span class="ct">✅ มอบหมายแล้ว / กำลังดำเนินการ (<?= count($assigned) ?> เรื่อง)</span></div>
+  <div style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>เลขที่</th><th>เรื่อง</th><th>ความเร่งด่วน</th><th>ความลับ</th><th>สถานะ</th><th>คำสั่ง ผอ.</th><th>จัดการ</th>
+      </tr></thead>
+      <tbody>
+      <?php if (empty($assigned)): ?>
+        <tr><td colspan="7" class="empty">ไม่มีรายการ</td></tr>
+      <?php else: foreach ($assigned as $d): ?>
+        <tr>
+          <td><span style="font-weight:600;color:var(--p);font-size:12px"><?= e($d['doc_number']) ?></span></td>
+          <td><span class="text-el" style="display:block;max-width:180px;font-size:13px"><?= e($d['subject']) ?></span></td>
+          <td><?= urgBadge($d['urgency']) ?></td>
+          <td><?= secBadge($d['secrecy']) ?></td>
+          <td><?= statusBadge($d['status']) ?></td>
+          <td><span style="font-size:12px;color:var(--tx2);white-space:pre-wrap"><?= e(mb_substr($d['director_note'] ?? '', 0, 60, 'UTF-8')) ?><?= mb_strlen($d['director_note'] ?? '', 'UTF-8') > 60 ? '…' : '' ?></span></td>
+          <td>
+            <div class="fx g2x">
+              <button class="btn bg bsm" onclick="openDocModal(<?= (int)$d['id'] ?>)">👁</button>
+              <?php if ($d['file_path']): foreach (array_filter(explode(',', $d['file_path'])) as $fi => $fn): $fn = trim($fn); ?>
+                <button type="button" class="btn bs bsm" onclick="openPdfModal('/rvc.rts/uploads/documents/<?= rawurlencode($fn) ?>','<?= e(addslashes($fn)) ?>')" title="ดูไฟล์แนบ">📄<?= count(array_filter(explode(',', $d['file_path']))) > 1 ? ' '.($fi+1) : '' ?></button>
+              <?php endforeach; endif ?>
             </div>
           </td>
         </tr>
