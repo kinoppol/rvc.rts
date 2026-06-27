@@ -326,7 +326,8 @@ async function openDocModal(docId) {
 
         const editBtn = document.getElementById('dm-edit-btn');
         if (editBtn) {
-            editBtn.style.display = d.status === 'pending_annotation' ? '' : 'none';
+            const pendingStatuses = ['pending_annotation','pending_deputy','pending_director'];
+        editBtn.style.display = pendingStatuses.includes(d.status) ? '' : 'none';
             editBtn.dataset.docId = d.id;
         }
 

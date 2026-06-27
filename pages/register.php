@@ -70,8 +70,11 @@ $countOut = (int)fetchValue('SELECT COUNT(*) FROM documents_out');
           <td>
             <div class="fx g2x">
               <button class="btn bg bsm" onclick="openDocModal(<?= (int)$d['id'] ?>)">👁</button>
+              <?php $canEdit = in_array($d['status'], ['pending_annotation','pending_deputy','pending_director']); ?>
+              <?php if ($canEdit): ?>
+                <button class="btn bs bsm" onclick="openEditDocById(<?= (int)$d['id'] ?>)" title="แก้ไขข้อมูล">✏️</button>
+              <?php endif ?>
               <?php if ($d['status'] === 'pending_annotation'): ?>
-                <button class="btn bs bsm" data-edit-id="<?= (int)$d['id'] ?>" onclick="openEditDocById(<?= (int)$d['id'] ?>)" title="แก้ไขข้อมูล">✏️</button>
                 <a class="btn bo bsm" href="/rvc.rts/?page=annotate&id=<?= (int)$d['id'] ?>">📝 เกษียน</a>
               <?php endif ?>
             </div>

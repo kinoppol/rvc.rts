@@ -107,7 +107,8 @@ if ($method === 'PUT') {
 
     $allowed = ['annotation','deputy_note','director_note','reply_text','status','urgency','secrecy'];
     // Allow editing core fields while still pending_annotation
-    if ($doc['status'] === 'pending_annotation' && ($data['_edit'] ?? false)) {
+    $pendingStatuses = ['pending_annotation','pending_deputy','pending_director'];
+    if (in_array($doc['status'], $pendingStatuses) && ($data['_edit'] ?? false)) {
         $allowed = array_merge($allowed, ['received_date','from_org','from_short','subject','doc_type','pages']);
     }
     $upd = [];
