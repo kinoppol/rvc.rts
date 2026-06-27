@@ -30,7 +30,7 @@ if (in_array($page, ['admin', 'import', 'users']) && $user['role'] !== 'admin') 
     $page = 'dashboard';
 }
 
-renderShell($user, $page, $titles[$page] ?? 'หน้าหลัก', function() use ($page) {
+renderShell($user, $page, $titles[$page] ?? 'หน้าหลัก', function() use ($page, $user) {
     $file = __DIR__ . '/pages/' . $page . '.php';
     if (file_exists($file)) include $file;
 });
