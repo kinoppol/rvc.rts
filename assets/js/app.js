@@ -51,6 +51,16 @@ function toast(msg, type = '') {
 }
 
 // ── Modal helper ──────────────────────────────────────────────────────
+function quickFill(taId, text) {
+    const ta = document.getElementById(taId);
+    if (!ta) return;
+    // Append on new line if there's already content, otherwise just set
+    const cur = ta.value;
+    ta.value = cur ? (cur.endsWith('\n') ? cur + text : cur + '\n' + text) : text;
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+}
+
 function openModal(id) {
     const el = document.getElementById(id);
     if (!el) return;

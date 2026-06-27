@@ -116,7 +116,11 @@ $pending = fetchAll("SELECT * FROM documents_in WHERE status='pending_director' 
     <div class="mb">
       <div class="fg">
         <label class="fl">ความเห็นรองผู้อำนวยการ <span class="req">*</span></label>
-        <textarea class="fc" id="dep-note" placeholder="เรียน ผู้อำนวยการ — ..." style="min-height:100px"></textarea>
+        <textarea class="fc" id="dep-note" style="min-height:100px"></textarea>
+        <div class="fx g2x" style="margin-top:6px;flex-wrap:wrap">
+          <span style="font-size:11.5px;color:var(--tx2);align-self:center">ปุ่มลัด:</span>
+          <button type="button" class="btn bg bsm" onclick="quickFill('dep-note','โปรดพิจารณาตามเสนอ')">โปรดพิจารณาตามเสนอ</button>
+        </div>
       </div>
     </div>
     <div class="mf">
@@ -137,6 +141,10 @@ $pending = fetchAll("SELECT * FROM documents_in WHERE status='pending_director' 
       <div class="fg">
         <label class="fl">คำสั่ง / หมายเหตุผู้อำนวยการ</label>
         <textarea class="fc" id="dir-note" placeholder="มอบหมายให้..." style="min-height:80px"></textarea>
+        <div class="fx g2x" style="margin-top:6px;flex-wrap:wrap">
+          <span style="font-size:11.5px;color:var(--tx2);align-self:center">ปุ่มลัด:</span>
+          <button type="button" class="btn bg bsm" onclick="quickFill('dir-note','มอบตามเสนอ')">มอบตามเสนอ</button>
+        </div>
       </div>
     </div>
     <div class="mf">
