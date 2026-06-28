@@ -2,6 +2,17 @@
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/functions.php';
 
+// Assigned documents (หนังสือที่ผ่าน ผอ. แล้ว)
+$assignedDocs = fetchAll(
+    "SELECT d.*, GROUP_CONCAT(dd.dept_name ORDER BY dd.dept_name SEPARATOR ', ') as dept_list
+     FROM documents_in d
+     LEFT JOIN document_departments dd ON dd.doc_id = d.id
+     WHERE d.status NOT IN ('pending_annotation','pending_deputy','pending_director')
+     GROUP BY d.id
+     ORDER BY d.updated_at DESC
+     LIMIT 100"
+);
+
 $tasks = fetchAll(
     "SELECT t.*, ab.name as by_name, at2.name as to_name, d.doc_number
      FROM tasks t
@@ -56,6 +67,45 @@ foreach ($tasks as $t) { if (isset($grp[$t['status']])) $grp[$t['status']][] = $
     </div>
   </div>
 <?php endforeach ?>
+</div>
+
+<!-- Assigned documents section -->
+<div class="card mb4">
+  <div class="ch fxab">
+    <span class="ct">📋 หนังสือที่มอบหมายแล้ว (<?= count($assignedDocs) ?> เรื่อง)</span>
+  </div>
+  <div style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>เลขที่</th><th>วันที่</th><th>จาก</th><th>เรื่อง</th>
+        <th>ความเร่งด่วน</th><th>สถานะ</th><th>คำสั่ง ผอ.</th><th>ฝ่าย/งาน</th><th>จัดการ</th>
+      </tr></thead>
+      <tbody>
+      <?php if (empty($assignedDocs)): ?>
+        <tr><td colspan="9" class="empty">ยังไม่มีหนังสือที่มอบหมาย</td></tr>
+      <?php else: foreach ($assignedDocs as $d): ?>
+        <tr>
+          <td><span style="font-weight:600;color:var(--p);font-size:12px;white-space:nowrap"><?= e($d['doc_number']) ?></span></td>
+          <td><span style="font-size:12px;white-space:nowrap"><?= e($d['received_date']) ?></span></td>
+          <td><span style="font-size:12.5px"><?= e($d['from_short'] ?: $d['from_org']) ?></span></td>
+          <td><span class="text-el" style="display:block;max-width:200px;font-size:13px"><?= e($d['subject']) ?></span></td>
+          <td><?= urgBadge($d['urgency']) ?></td>
+          <td><?= statusBadge($d['status']) ?></td>
+          <td><span style="font-size:12px;color:var(--tx2);white-space:pre-wrap"><?= e(mb_substr($d['director_note'] ?? '', 0, 50, 'UTF-8')) ?><?= mb_strlen($d['director_note'] ?? '', 'UTF-8') > 50 ? '…' : '' ?></span></td>
+          <td><span style="font-size:12px;color:var(--tx2)"><?= e($d['dept_list'] ?? '') ?></span></td>
+          <td>
+            <div class="fx g2x">
+              <button class="btn bg bsm" onclick="openDocModal(<?= (int)$d['id'] ?>)">👁</button>
+              <?php if ($d['file_path']): foreach (array_filter(explode(',', $d['file_path'])) as $fi => $fn): $fn = trim($fn); ?>
+                <button type="button" class="btn bs bsm" onclick="openPdfModal('/rvc.rts/uploads/documents/<?= rawurlencode($fn) ?>','<?= e(addslashes($fn)) ?>')">📄<?= count(array_filter(explode(',', $d['file_path']))) > 1 ? ' '.($fi+1) : '' ?></button>
+              <?php endforeach; endif ?>
+            </div>
+          </td>
+        </tr>
+      <?php endforeach; endif ?>
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <!-- Task detail modal -->
